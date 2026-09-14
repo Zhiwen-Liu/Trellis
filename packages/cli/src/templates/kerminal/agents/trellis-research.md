@@ -6,7 +6,7 @@ description: |
   directory. No code modifications outside that directory. On Kerminal the
   main session loads this skill (`.kerminal/skills/trellis-research/SKILL.md`)
   and spawns a generic sub-agent whose prompt is this file's content.
-tools: shell_command, read_file, write_file, web_search, list_mcp_resources, read_mcp_resource
+tools: shell_command, read_file, write_file, web_search, list_mcp_resources, list_mcp_resource_templates, read_mcp_resource
 ---
 # Research Agent
 
