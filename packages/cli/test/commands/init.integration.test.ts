@@ -44,12 +44,24 @@ vi.mock("giget", async () => {
   };
 });
 
+// Spy on configureKerminal (calls through to the real implementation) so the
+// tests can assert the init flow forwards `nonInteractive` — a missing flag
+// blocks `--yes` runs on the git-init readline prompt.
+vi.mock("../../src/configurators/kerminal.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("../../src/configurators/kerminal.js")
+    >();
+  return { ...actual, configureKerminal: vi.fn(actual.configureKerminal) };
+});
+
 // === Imports ===
 
 import { init } from "../../src/commands/init.js";
 import { VERSION } from "../../src/constants/version.js";
 import { DIR_NAMES, FILE_NAMES, PATHS } from "../../src/constants/paths.js";
 import { collectPlatformTemplates } from "../../src/configurators/index.js";
+import { configureKerminal } from "../../src/configurators/kerminal.js";
 import { computeHash } from "../../src/utils/template-hash.js";
 import {
   COPILOT_INSTRUCTIONS_PATH,
@@ -689,6 +701,42 @@ describe("init() integration", () => {
     }
     const expectedKimiPaths = [...kimiTemplates.keys()];
     expect(trackedPaths).toEqual(expect.arrayContaining(expectedKimiPaths));
+  });
+
+  it("#3n kerminal init forwards nonInteractive to configureKerminal under --yes", async () => {
+    await init({ yes: true, kerminal: true });
+
+    // Regression: the full-init path must forward `nonInteractive` like the
+    // add-platform path does — otherwise `trellis init --kerminal --yes` on a
+    // TTY without .git blocks on the git-init readline prompt instead of
+    // printing the warning.
+    expect(vi.mocked(configureKerminal)).toHaveBeenCalledWith(
+      tmpDir,
+      expect.objectContaining({ nonInteractive: true }),
+    );
+
+    // Kerminal file set landed: shared skills, private skills, operator guide.
+    expect(
+      fs.existsSync(
+        path.join(tmpDir, ".agents", "skills", "trellis-check", "SKILL.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(tmpDir, ".kerminal", "skills", "trellis-start", "SKILL.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(tmpDir, ".kerminal", "skills", "trellis-implement", "SKILL.md"),
+      ),
+    ).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, ".kerminal", "KERMINAL.md"))).toBe(
+      true,
+    );
+    // Explicit flag selection replaces the default claude/cursor set.
+    expect(fs.existsSync(path.join(tmpDir, ".claude"))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, ".cursor"))).toBe(false);
   });
 
   it("#3l trae platform writes hooks, commands, agents, and tracked templates", async () => {

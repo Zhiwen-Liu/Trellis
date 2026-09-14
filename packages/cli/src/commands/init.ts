@@ -1943,6 +1943,7 @@ export async function init(options: InitOptions): Promise<void> {
         );
         await configurePlatform(platformId, cwd, {
           withStatusline: options.withStatusline,
+          nonInteractive: options.yes === true,
         });
         if (platformId === "claude-code" && options.withStatusline) {
           console.log(
