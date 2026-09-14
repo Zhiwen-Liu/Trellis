@@ -11,23 +11,24 @@
 <sub>AI 写代码很快，但它每次会话都从零开始理解项目，记不住你的规范，也记不住团队级别的需求。Trellis 会把规范、任务、记忆沉淀进仓库，让任意 Coding Agent 都按你的工程标准来实践。</sub>
 </p>
 
+> [!NOTE]
+> 这是 [mindfold-ai/Trellis](https://github.com/mindfold-ai/Trellis) 的 **Kerminal 专用 fork**：基于上游能力，但优先演进 Kerminal 适配。文档以纯 Markdown 形式维护在 [Zhiwen-Liu/trellis-docs](https://github.com/Zhiwen-Liu/trellis-docs)，本 fork 不单独部署文档站。
+
 <p align="center">
 <a href="./README.md">English</a> •
-<a href="https://docs.trytrellis.app/zh">文档</a> •
-<a href="https://docs.trytrellis.app/zh/start/install-and-first-task">快速开始</a> •
-<a href="https://docs.trytrellis.app/zh/advanced/multi-platform">支持平台</a> •
-<a href="https://docs.trytrellis.app/zh/start/real-world-scenarios">使用场景</a>
+<a href="https://github.com/Zhiwen-Liu/trellis-docs">文档</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx">快速开始</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx">支持平台</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/real-world-scenarios.mdx">使用场景</a>
 </p>
 
 <p align="center">
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/v/@mindfoldhq/trellis.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/dw/@mindfoldhq/trellis?style=flat-square&color=cb3837&label=downloads" alt="npm downloads" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/stargazers"><img src="https://img.shields.io/github/stars/mindfold-ai/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
-<a href="https://docs.trytrellis.app/zh"><img src="https://img.shields.io/badge/docs-trytrellis.app-0f766e?style=flat-square" alt="docs" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/stargazers"><img src="https://img.shields.io/github/stars/Zhiwen-Liu/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
+<a href="https://github.com/Zhiwen-Liu/trellis-docs"><img src="https://img.shields.io/badge/docs-markdown-0f766e?style=flat-square" alt="docs" /></a>
 <a href="https://discord.com/invite/tWcCZ3aRHc"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/issues"><img src="https://img.shields.io/github/issues/mindfold-ai/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/mindfold-ai/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/issues"><img src="https://img.shields.io/github/issues/Zhiwen-Liu/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/Zhiwen-Liu/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
 <a href="https://deepwiki.com/mindfold-ai/Trellis"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?style=flat-square" alt="Ask DeepWiki" /></a>
 <a href="https://chatgpt.com/?q=Explain+the+project+mindfold-ai/Trellis+on+GitHub"><img src="https://img.shields.io/badge/Ask-ChatGPT-74aa9c?style=flat-square&logo=openai&logoColor=white" alt="Ask ChatGPT" /></a>
 </p>
@@ -54,17 +55,22 @@
 ## 快速开始
 
 ```bash
-# 1. 安装 Trellis
-npm install -g @mindfoldhq/trellis@latest
+# 1. 从源码构建 CLI（本 fork 跟随最新代码；
+#    Kerminal 支持需要 Trellis >= 0.6.18，npm 上尚未发布）
+git clone https://github.com/Zhiwen-Liu/Trellis.git
+cd Trellis
+pnpm install && pnpm build
+cd packages/cli && pnpm link --global   # 提供 `trellis`（别名 `tl`）
+#    全局链接解析到这个克隆目录，请勿删除
 
-# 2. 在仓库中初始化
-trellis init -u your-name
+# 2. 在你的仓库中用 Kerminal 初始化
+trellis init --kerminal -u your-name
 
-# 3. 或仅初始化你实际使用的平台
+# 3. 上游平台依然可用
 trellis init --cursor --opencode --codex -u your-name
 ```
 
-查看 [快速开始](https://docs.trytrellis.app/zh/start/install-and-first-task) 与 [支持平台](https://docs.trytrellis.app/zh/advanced/multi-platform) 指南以了解详细配置步骤。
+查看 [快速开始](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx) 与 [支持平台](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx) 指南以了解详细配置步骤。
 
 ## 如何使用
 
@@ -88,11 +94,11 @@ Trellis 内部运行一个 4 阶段循环，skill 与子代理均由系统自动
 
 | 需求 | 链接 |
 | --- | --- |
-| 在仓库中安装 Trellis | [快速开始](https://docs.trytrellis.app/zh/start/install-and-first-task) |
-| 了解各平台之间的差异 | [支持平台](https://docs.trytrellis.app/zh/advanced/multi-platform) |
-| 查看实际使用场景 | [真实场景](https://docs.trytrellis.app/zh/start/real-world-scenarios) |
-| 从 Spec 模板起步 | [Spec 模板](https://docs.trytrellis.app/zh/templates/specs-index) |
-| 跟进版本更新 | [更新日志](https://docs.trytrellis.app/zh/changelog) |
+| 在仓库中安装 Trellis | [快速开始](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx) |
+| 了解各平台之间的差异 | [支持平台](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx) |
+| 查看实际使用场景 | [真实场景](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/real-world-scenarios.mdx) |
+| 从 Spec 模板起步 | [Spec 模板](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/templates/specs-index.mdx) |
+| 跟进版本更新 | [更新日志](https://github.com/Zhiwen-Liu/trellis-docs/tree/main/zh/changelog) |
 
 ## 常见问题
 
@@ -154,10 +160,10 @@ Trellis 管理的全部项目级表面。请新开一个 agent 会话进行对�
 
 ## 社区与资源
 
-- [官方文档](https://docs.trytrellis.app/zh)
-- [GitHub Issues](https://github.com/mindfold-ai/Trellis/issues)
-- [Discord](https://discord.com/invite/tWcCZ3aRHc)
-- [技术博客](https://docs.trytrellis.app/zh/blog)
+- [文档（Markdown）](https://github.com/Zhiwen-Liu/trellis-docs)
+- [GitHub Issues](https://github.com/Zhiwen-Liu/Trellis/issues)
+- [Discord](https://discord.com/invite/tWcCZ3aRHc)（上游社区）
+- [技术博客](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/blog/index.mdx)
 
 ### 联系我们
 
@@ -168,7 +174,8 @@ Trellis 管理的全部项目级表面。请新开一个 agent 会话进行对�
 </p>
 
 <p align="center">
-<a href="https://github.com/mindfold-ai/Trellis">官方仓库</a> •
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE">AGPL-3.0 License</a> •
-由 <a href="https://github.com/mindfold-ai">Mindfold</a> 构建
+<a href="https://github.com/Zhiwen-Liu/Trellis">本 Fork（Kerminal 专用）</a> •
+<a href="https://github.com/mindfold-ai/Trellis">上游仓库</a> •
+<a href="./LICENSE">AGPL-3.0 License</a> •
+由 <a href="https://github.com/mindfold-ai">Mindfold</a> 构建，fork 由 <a href="https://github.com/Zhiwen-Liu">Zhiwen-Liu</a> 维护
 </p>

@@ -11,23 +11,24 @@
 <sub>AI writes code fast, but every session it starts from scratch — no memory of your project, your conventions, or your team's requirements. Trellis persists specs, tasks, and memory into your repo, so any coding agent works to your engineering standards.</sub>
 </p>
 
+> [!NOTE]
+> This is a **Kerminal-focused fork** of [mindfold-ai/Trellis](https://github.com/mindfold-ai/Trellis). It builds on upstream's capabilities but evolves the [Kerminal](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/advanced/multi-platform.mdx) integration first. Docs are plain Markdown in [Zhiwen-Liu/trellis-docs](https://github.com/Zhiwen-Liu/trellis-docs) — this fork has no hosted docs site.
+
 <p align="center">
 <a href="./README_CN.md">简体中文</a> •
-<a href="https://docs.trytrellis.app/">Docs</a> •
-<a href="https://docs.trytrellis.app/start/install-and-first-task">Quick Start</a> •
-<a href="https://docs.trytrellis.app/advanced/multi-platform">Supported Platforms</a> •
-<a href="https://docs.trytrellis.app/start/real-world-scenarios">Use Cases</a>
+<a href="https://github.com/Zhiwen-Liu/trellis-docs">Docs</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/start/install-and-first-task.mdx">Quick Start</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/advanced/multi-platform.mdx">Supported Platforms</a> •
+<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/start/real-world-scenarios.mdx">Use Cases</a>
 </p>
 
 <p align="center">
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/v/@mindfoldhq/trellis.svg?style=flat-square&color=2563eb" alt="npm version" /></a>
-<a href="https://www.npmjs.com/package/@mindfoldhq/trellis"><img src="https://img.shields.io/npm/dw/@mindfoldhq/trellis?style=flat-square&color=cb3837&label=downloads" alt="npm downloads" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/stargazers"><img src="https://img.shields.io/github/stars/mindfold-ai/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
-<a href="https://docs.trytrellis.app/"><img src="https://img.shields.io/badge/docs-trytrellis.app-0f766e?style=flat-square" alt="docs" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/stargazers"><img src="https://img.shields.io/github/stars/Zhiwen-Liu/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
+<a href="https://github.com/Zhiwen-Liu/trellis-docs"><img src="https://img.shields.io/badge/docs-markdown-0f766e?style=flat-square" alt="docs" /></a>
 <a href="https://discord.com/invite/tWcCZ3aRHc"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/issues"><img src="https://img.shields.io/github/issues/mindfold-ai/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
-<a href="https://github.com/mindfold-ai/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/mindfold-ai/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/issues"><img src="https://img.shields.io/github/issues/Zhiwen-Liu/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
+<a href="https://github.com/Zhiwen-Liu/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/Zhiwen-Liu/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
 <a href="https://deepwiki.com/mindfold-ai/Trellis"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?style=flat-square" alt="Ask DeepWiki" /></a>
 <a href="https://chatgpt.com/?q=Explain+the+project+mindfold-ai/Trellis+on+GitHub"><img src="https://img.shields.io/badge/Ask-ChatGPT-74aa9c?style=flat-square&logo=openai&logoColor=white" alt="Ask ChatGPT" /></a>
 </p>
@@ -54,17 +55,22 @@
 ## Quick Start
 
 ```bash
-# 1. Install Trellis
-npm install -g @mindfoldhq/trellis@latest
+# 1. Build the CLI from source (this fork tracks the latest code;
+#    Kerminal support requires Trellis >= 0.6.18, not yet on npm)
+git clone https://github.com/Zhiwen-Liu/Trellis.git
+cd Trellis
+pnpm install && pnpm build
+cd packages/cli && pnpm link --global   # provides `trellis` (alias `tl`)
+#    the global link resolves into this clone — keep it around
 
-# 2. Initialize in your repo
-trellis init -u your-name
+# 2. Initialize in your repo with Kerminal
+trellis init --kerminal -u your-name
 
-# 3. Or initialize with the platforms you actually use
+# 3. Upstream platforms remain available
 trellis init --cursor --opencode --codex -u your-name
 ```
 
-See the [Quick Start](https://docs.trytrellis.app/start/install-and-first-task) and [Supported Platforms](https://docs.trytrellis.app/advanced/multi-platform) guides for setup details.
+See the [Quick Start](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/start/install-and-first-task.mdx) and [Supported Platforms](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/advanced/multi-platform.mdx) guides for setup details.
 
 ## How to Use
 
@@ -86,13 +92,13 @@ Trellis runs a 4-phase loop with auto-invoked skills and sub-agents:
 
 ## Resources
 
-| Need                            | Link                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| Install Trellis in a repo       | [Quick Start](https://docs.trytrellis.app/start/install-and-first-task)        |
-| Understand platform differences | [Supported Platforms](https://docs.trytrellis.app/advanced/multi-platform)     |
-| See the workflow in practice    | [Real-World Scenarios](https://docs.trytrellis.app/start/real-world-scenarios) |
-| Start from spec templates       | [Spec Templates](https://docs.trytrellis.app/templates/specs-index)            |
-| Track releases                  | [Changelog](https://docs.trytrellis.app/changelog)                             |
+| Need                            | Link                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Install Trellis in a repo       | [Quick Start](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/start/install-and-first-task.mdx)                |
+| Understand platform differences | [Supported Platforms](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/advanced/multi-platform.mdx)             |
+| See the workflow in practice    | [Real-World Scenarios](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/start/real-world-scenarios.mdx)         |
+| Start from spec templates       | [Spec Templates](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/templates/specs-index.mdx)                    |
+| Track releases                  | [Changelog](https://github.com/Zhiwen-Liu/trellis-docs/tree/main/changelog)                                         |
 
 ## FAQ
 
@@ -156,13 +162,14 @@ writes until the conflict is resolved.
 
 ## Community & Resources
 
-- [Official Docs](https://docs.trytrellis.app/)
-- [GitHub Issues](https://github.com/mindfold-ai/Trellis/issues)
-- [Discord](https://discord.com/invite/tWcCZ3aRHc)
-- [Tech Blog](https://docs.trytrellis.app/blog)
+- [Docs (Markdown)](https://github.com/Zhiwen-Liu/trellis-docs)
+- [GitHub Issues](https://github.com/Zhiwen-Liu/Trellis/issues)
+- [Discord](https://discord.com/invite/tWcCZ3aRHc) (upstream community)
+- [Tech Blog](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/blog/index.mdx)
 
 <p align="center">
-<a href="https://github.com/mindfold-ai/Trellis">Official Repository</a> •
-<a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE">AGPL-3.0 License</a> •
-Built by <a href="https://github.com/mindfold-ai">Mindfold</a>
+<a href="https://github.com/Zhiwen-Liu/Trellis">This Fork (Kerminal-focused)</a> •
+<a href="https://github.com/mindfold-ai/Trellis">Upstream Repository</a> •
+<a href="./LICENSE">AGPL-3.0 License</a> •
+Built by <a href="https://github.com/mindfold-ai">Mindfold</a>, fork maintained by <a href="https://github.com/Zhiwen-Liu">Zhiwen-Liu</a>
 </p>
