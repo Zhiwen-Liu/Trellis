@@ -22,6 +22,7 @@ export type AITool =
   | "copilot"
   | "droid"
   | "dsh"
+  | "kerminal"
   | "pi"
   | "reasonix"
   | "zcode"
@@ -50,6 +51,7 @@ export type TemplateDir =
   | "copilot"
   | "droid"
   | "dsh"
+  | "kerminal"
   | "pi"
   | "reasonix"
   | "zcode"
@@ -78,6 +80,7 @@ export type CliFlag =
   | "copilot"
   | "droid"
   | "dsh"
+  | "kerminal"
   | "pi"
   | "reasonix"
   | "zcode"
@@ -428,6 +431,43 @@ export const AI_TOOLS: Record<AITool, AIToolConfig> = {
       agentCapable: true,
       hasHooks: false,
       cliFlag: "dsh",
+    },
+  },
+  /**
+   * Kerminal — class-2 pull-based platform.
+   *
+   * Kerminal is a skills-first terminal agent: it reads the project
+   * `AGENTS.md` (Trellis writes the managed block at init) and loads skills
+   * by name through its skill tool. It discovers skills from the shared
+   * `.agents/skills/` root (agentskills.io standard), so workflow/bundled
+   * skills go there via the neutral resolver (byte-identical to
+   * Codex/Gemini/Pi/dsh writes). User-invocable entry skills
+   * (`trellis-start` / `trellis-continue` / `trellis-finish-work`) live under
+   * `.kerminal/skills/` — Kerminal's own project skill root — platform-
+   * resolved (`--platform kerminal`, bare `trellis-<name>` refs).
+   *
+   * Kerminal has no project-level hook system Trellis may write, so context
+   * is pull-based: skills read `.trellis/` files directly, `trellis-start`
+   * stays user-invocable, and no session-start payload is shipped. It has no
+   * project-level sub-agent definition surface either, so no
+   * trellis-implement / trellis-check / trellis-research agent prompts are
+   * written; implement/check/research run inline through the workflow skills.
+   */
+  kerminal: {
+    name: "Kerminal",
+    templateDirs: ["common", "kerminal"],
+    configDir: ".kerminal",
+    supportsAgentSkills: true,
+    cliFlag: "kerminal",
+    defaultChecked: false,
+    hasPythonHooks: false,
+    templateContext: {
+      cmdRefPrefix: "trellis-",
+      executorAI: "Bash scripts or tool calls",
+      userActionLabel: "Skills",
+      agentCapable: true,
+      hasHooks: false,
+      cliFlag: "kerminal",
     },
   },
   pi: {

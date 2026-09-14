@@ -19,6 +19,12 @@ export interface PlatformConfigureOptions {
    * `configureClaude` in `claude.ts`.
    */
   withStatusline?: boolean;
+  /**
+   * True when the CLI runs non-interactively (`--yes`, piped stdin). Platforms
+   * that need user consent for extra actions (e.g. Kerminal's optional
+   * `git init`) must fall back to a printed warning instead of prompting.
+   */
+  nonInteractive?: boolean;
 }
 
 /**

@@ -291,13 +291,13 @@ When a user request matches one of these intents inside an active task, route fi
 
 [/Claude Code, Cursor, OpenCode, codex-sub-agent, Kiro, Gemini, Qoder, CodeBuddy, Copilot, Droid, Pi, Oh My Pi, ZCode, Snow, Reasonix, Trae, Grok, Kimi Code]
 
-[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 - Planning or unclear requirements -> `trellis-brainstorm`.
 - Before editing -> `trellis-before-dev`; after editing -> `trellis-check`.
 - Repeated debugging -> `trellis-break-loop`; spec updates -> `trellis-update-spec`.
 
-[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 ### Guardrails
 
@@ -374,11 +374,11 @@ Spawn the research sub-agent:
 
 [/Claude Code, Cursor, OpenCode, codex-sub-agent, Kiro, Gemini, Qoder, CodeBuddy, Copilot, Droid, Pi, Oh My Pi, ZCode, Snow, Reasonix, Trae, Grok, Kimi Code]
 
-[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 Do the research in the main session directly and write findings into `{TASK_DIR}/research/`. `codex-inline` is the explicit mode that keeps work in the main session.
 
-[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 **Research artifact conventions**:
 - One file per research topic (e.g. `research/auth-library-comparison.md`)
@@ -438,11 +438,11 @@ Skip this step only when both files already have real curated entries.
 
 [/Claude Code, Cursor, OpenCode, codex-sub-agent, Kiro, Gemini, Qoder, CodeBuddy, Copilot, Droid, Pi, Oh My Pi, ZCode, Snow, Reasonix, Trae, Grok, Kimi Code]
 
-[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 Skip this step. Context is loaded directly by the `trellis-before-dev` skill in Phase 2.
 
-[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 #### 1.4 Activate task `[required · once]`
 
@@ -526,7 +526,7 @@ The platform prelude auto-handles the context load requirement:
 
 [/Kiro]
 
-[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 1. Load the `trellis-before-dev` skill to read project guidelines
 2. Read `{TASK_DIR}/prd.md`, then `design.md` if present, then `implement.md` if present
@@ -534,7 +534,7 @@ The platform prelude auto-handles the context load requirement:
 4. Implement the code per reviewed artifacts
 5. Run project lint and type-check
 
-[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 #### 2.2 Quality check `[required · repeatable]`
 
@@ -554,7 +554,7 @@ The check agent's job:
 
 [/Claude Code, Cursor, OpenCode, codex-sub-agent, Kiro, Gemini, Qoder, CodeBuddy, Copilot, Droid, Pi, Oh My Pi, ZCode, Snow, Reasonix, Trae, Grok, Kimi Code]
 
-[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 Load the `trellis-check` skill and verify the code per its guidance:
 - Spec compliance
@@ -563,7 +563,7 @@ Load the `trellis-check` skill and verify the code per its guidance:
 
 If issues are found → fix → re-check, until green.
 
-[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness]
+[/codex-inline, Kilo, Antigravity, Devin, DeepSeek Harness, Kerminal]
 
 **Final pass (before Phase 3.4 commit)**: the last 2.2 of a task must run full-scope, not just on the latest implement chunk. List all affected packages with `python3 ./.trellis/scripts/get_context.py --mode packages`, then load each package's spec index Quality Check section. This catches cross-layer / multi-package issues a mid-iteration local 2.2 cannot.
 
