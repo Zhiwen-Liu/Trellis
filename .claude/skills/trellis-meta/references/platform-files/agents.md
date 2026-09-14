@@ -35,6 +35,7 @@ Agent files should not become generic chat prompts. They should define input sou
 | Reasonix | `.reasonix/skills/trellis-*/SKILL.md` (subagent frontmatter) |
 | ZCode | `.zcode/agents/trellis-*.md` |
 | Kimi Code | `.kimi-code/agents/trellis-*.md` (custom sub-agents; the same prompts also ship as `.kimi-code/skills/trellis-*/SKILL.md`) |
+| Kerminal | No `agents/` directory — agent prompts ship as `.kerminal/skills/trellis-*/SKILL.md` and are dispatched as generic sub-agents |
 
 GitHub Copilot agent/prompt support is provided by a combination of directories such as `.github/agents/`, `.github/prompts/`, and `.github/skills/`; inspect the files actually generated in the user project.
 
