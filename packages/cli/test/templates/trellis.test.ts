@@ -184,6 +184,10 @@ describe("trellis template constants", () => {
     const pullBasedMarker =
       "[Gemini, Qoder, Copilot, Reasonix, Trae, Grok, Kimi Code]";
     const pullBasedBlock = platformBlock(implement, pullBasedMarker);
+    // Kerminal has no project-level sub-agent registry, so its 2.1 guidance
+    // is a dedicated [Kerminal] block (load agent skill → generic spawn)
+    // instead of the pull-based group block.
+    const kerminalBlock = platformBlock(implement, "[Kerminal]");
 
     const workflowLabelByPlatform: Partial<Record<AITool, string>> = {
       gemini: "Gemini",
@@ -192,6 +196,7 @@ describe("trellis template constants", () => {
       trae: "Trae",
       grok: "Grok",
       kimi: "Kimi Code",
+      kerminal: "Kerminal",
     };
     // Pi templates keep a pull-based fallback, but workflow 2.1 routes Pi
     // through the extension-backed context path.
@@ -227,7 +232,8 @@ describe("trellis template constants", () => {
 
     const pullBasedLabels = [...generatedPullBasedLabels, "Reasonix"];
     for (const label of pullBasedLabels) {
-      expect(pullBasedBlock, `${label} must use pull-based 2.1 guidance`).toContain(
+      const block = label === "Kerminal" ? kerminalBlock : pullBasedBlock;
+      expect(block, `${label} must use pull-based 2.1 guidance`).toContain(
         label,
       );
       expect(
@@ -235,6 +241,8 @@ describe("trellis template constants", () => {
         `${label} must not use hook/plugin auto-handles 2.1 guidance`,
       ).not.toContain(label);
     }
+    expect(kerminalBlock).toContain("Active task: <task path>");
+    expect(kerminalBlock).toContain("auto-injects the project `AGENTS.md`");
     expect(pullBasedBlock).toContain(
       "The pull-based sub-agent definition auto-handles the context load requirement",
     );

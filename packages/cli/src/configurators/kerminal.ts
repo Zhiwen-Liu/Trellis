@@ -12,16 +12,17 @@
  *   resolver so the files stay byte-identical to Codex/Gemini/Pi/dsh/Kimi
  *   writes into the same shared root.
  * - `.kerminal/skills/` — Kerminal-private user-invocable entry skills
- *   (`trellis-start` / `trellis-continue` / `trellis-finish-work`),
- *   platform-resolved (`--platform kerminal`, `trellis-<name>` skill refs),
- *   in Kerminal's own project skill root.
+ *   (`trellis-start` / `trellis-continue` / `trellis-finish-work`) plus the
+ *   Trellis agent prompts (trellis-implement / trellis-check /
+ *   trellis-research), platform-resolved (`--platform kerminal`,
+ *   `trellis-<name>` skill refs). Kerminal has no project-level sub-agent
+ *   registry, so the main session loads an agent skill and spawns a generic
+ *   sub-agent whose prompt is the skill content; Kerminal auto-injects the
+ *   project `AGENTS.md` into spawned sub-agents, and task context is pulled
+ *   through the pull-based prelude.
  * - `.kerminal/KERMINAL.md` — operator guide; also gives the platform a
  *   configDir-owned tracked file so `trellis platforms` / `uninstall`
  *   can detect and scope Kerminal.
- *
- * Kerminal ships no project-level sub-agent definition surface, so no
- * trellis-implement / trellis-check / trellis-research agent prompts are
- * written; implement/check/research run inline through the workflow skills.
  */
 
 import fs from "node:fs";
@@ -29,14 +30,16 @@ import path from "node:path";
 import readline from "node:readline";
 import { spawnSync } from "node:child_process";
 import { AI_TOOLS } from "../types/ai-tools.js";
-import { getKerminalGuide } from "../templates/kerminal/index.js";
+import { getKerminalGuide, getAllAgents } from "../templates/kerminal/index.js";
 import {
+  applyPullBasedPreludeMarkdown,
   collectSkillTemplates,
   resolveAllAsSkills,
   resolveBundledSkills,
   resolveSkillsNeutral,
   renderTemplateMap,
   writeTemplateMap,
+  type AgentContent,
   type PlatformConfigureOptions,
 } from "./shared.js";
 
@@ -62,6 +65,12 @@ function resolveKerminalCommandSkills(): ReturnType<typeof resolveAllAsSkills> {
   );
 }
 
+/** Trellis agent prompts as Kerminal skills (trellis-implement / trellis-check
+ *  / trellis-research), with the pull-based prelude on implement/check. */
+function resolveKerminalAgentSkills(): AgentContent[] {
+  return applyPullBasedPreludeMarkdown(getAllAgents());
+}
+
 /**
  * The Kerminal file set — written at init and diffed by `trellis update`.
  */
@@ -79,12 +88,15 @@ export function collectKerminalTemplates(): Map<string, string> {
     files.set(filePath, content);
   }
 
-  // 2. Commands-as-skills → `.kerminal/skills/` (Kerminal-native project
-  //    root).
-  for (const [filePath, content] of collectSkillTemplates(
-    ".kerminal/skills",
-    resolveKerminalCommandSkills(),
-  )) {
+  // 2. Commands-as-skills + Trellis agent prompts → `.kerminal/skills/`.
+  //    Kerminal has no project-level sub-agent registry: the main session
+  //    loads an agent skill and spawns a generic sub-agent whose prompt is
+  //    the skill content.
+  const agentPrompts = resolveKerminalAgentSkills();
+  for (const [filePath, content] of collectSkillTemplates(".kerminal/skills", [
+    ...resolveKerminalCommandSkills(),
+    ...agentPrompts,
+  ])) {
     files.set(filePath, content);
   }
 

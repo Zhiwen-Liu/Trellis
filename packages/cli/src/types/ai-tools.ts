@@ -434,7 +434,7 @@ export const AI_TOOLS: Record<AITool, AIToolConfig> = {
     },
   },
   /**
-   * Kerminal — class-2 pull-based platform.
+   * Kerminal — class-2 pull-based platform with sub-agent support.
    *
    * Kerminal is a skills-first terminal agent: it reads the project
    * `AGENTS.md` (Trellis writes the managed block at init) and loads skills
@@ -442,16 +442,21 @@ export const AI_TOOLS: Record<AITool, AIToolConfig> = {
    * `.agents/skills/` root (agentskills.io standard), so workflow/bundled
    * skills go there via the neutral resolver (byte-identical to
    * Codex/Gemini/Pi/dsh writes). User-invocable entry skills
-   * (`trellis-start` / `trellis-continue` / `trellis-finish-work`) live under
-   * `.kerminal/skills/` — Kerminal's own project skill root — platform-
-   * resolved (`--platform kerminal`, bare `trellis-<name>` refs).
+   * (`trellis-start` / `trellis-continue` / `trellis-finish-work`) and the
+   * Trellis agent prompts (trellis-implement / trellis-check /
+   * trellis-research) live under `.kerminal/skills/` — Kerminal's own
+   * project skill root — platform-resolved (`--platform kerminal`, bare
+   * `trellis-<name>` refs).
    *
    * Kerminal has no project-level hook system Trellis may write, so context
    * is pull-based: skills read `.trellis/` files directly, `trellis-start`
-   * stays user-invocable, and no session-start payload is shipped. It has no
-   * project-level sub-agent definition surface either, so no
-   * trellis-implement / trellis-check / trellis-research agent prompts are
-   * written; implement/check/research run inline through the workflow skills.
+   * stays user-invocable, and no session-start payload is shipped. It also
+   * has no project-level sub-agent registry: the main session dispatches
+   * trellis-implement / trellis-check / trellis-research by loading the
+   * matching agent skill and spawning a generic sub-agent whose prompt is
+   * the skill content. Kerminal auto-injects the project `AGENTS.md` into
+   * spawned sub-agents; task context is pulled through the pull-based
+   * prelude.
    */
   kerminal: {
     name: "Kerminal",

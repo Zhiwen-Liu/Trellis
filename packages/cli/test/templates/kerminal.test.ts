@@ -62,6 +62,28 @@ describe("kerminal collectKerminalTemplates", () => {
     }
   });
 
+  it("ships trellis agent prompts as skills for generic sub-agent dispatch", () => {
+    const files = collectKerminalTemplates();
+    expect(files.has(".kerminal/skills/trellis-implement/SKILL.md")).toBe(true);
+    expect(files.has(".kerminal/skills/trellis-check/SKILL.md")).toBe(true);
+    expect(files.has(".kerminal/skills/trellis-research/SKILL.md")).toBe(true);
+
+    // The main session pastes the skill content into a generic sub-agent's
+    // prompt, so each prompt must carry its own recursion guard and the
+    // pull-based prelude (implement/check) for task-context loading.
+    const implement = files.get(".kerminal/skills/trellis-implement/SKILL.md");
+    expect(implement).toContain("Recursion Guard");
+    expect(implement).toContain("Active task: <path");
+    expect(implement).toContain("Load Trellis Context First");
+    expect(files.get(".kerminal/skills/trellis-check/SKILL.md")).toContain(
+      "Load Trellis Context First",
+    );
+    // Research stays standalone (no jsonl context bucket).
+    expect(files.get(".kerminal/skills/trellis-research/SKILL.md")).not.toContain(
+      "Load Trellis Context First",
+    );
+  });
+
   it("operator guide documents the .git project-detection requirement", () => {
     const files = collectKerminalTemplates();
     expect(files.get(".kerminal/KERMINAL.md")).toContain("`.git`");

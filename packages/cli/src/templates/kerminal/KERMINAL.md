@@ -9,7 +9,7 @@ through its skill tool (prompted by the Trellis block in `AGENTS.md`).
 | Skills (`.agents/skills/trellis-*/SKILL.md`) | Works — Kerminal discovers this shared root natively |
 | Entry skills (`.kerminal/skills/trellis-*/SKILL.md`) | Works — Kerminal's own project skill root |
 | Context hooks | None — pull-based: skills read `.trellis/` files directly |
-| Sub-agents | None shipped — implement/check/research run inline via the workflow skills |
+| Sub-agents | Works — generic dispatch: load an agent skill, spawn a sub-agent with its content; spawned agents auto-inject `AGENTS.md` |
 
 ## Quick start
 
@@ -40,7 +40,9 @@ In Kerminal:
   `trellis-spec-bootstrap` / `trellis-session-insight` skills. Byte-identical
   to Codex / Gemini CLI / Pi / dsh writes into the same shared root.
 - `.kerminal/skills/` — Kerminal-private entry skills (`trellis-start` /
-  `trellis-continue` / `trellis-finish-work`).
+  `trellis-continue` / `trellis-finish-work`) and the Trellis agent prompts
+  (`trellis-implement` / `trellis-check` / `trellis-research`) used for
+  generic sub-agent dispatch.
 - `.trellis/` — specs, tasks, workspace memory, and the shared scripts the
   skills invoke (`get_context.py`, `task.py`, ...).
 - `AGENTS.md` — Trellis-managed instructions block pointing the agent at the
@@ -51,9 +53,11 @@ In Kerminal:
 - Kerminal only reads project-level configuration (`AGENTS.md`, `.kerminal/`,
   `.agents/skills/`) in a directory containing `.git`. Run `git init` in the
   project root before launching a Kerminal session; `trellis init --kerminal`
-  warns when the project root is not a git repository.
+  offers to run `git init` interactively and warns in non-interactive runs.
+- Sub-agent dispatch: Kerminal has no project-level sub-agent registry, so
+  the main session loads an agent skill (e.g. `trellis-implement`) and
+  spawns a generic sub-agent whose prompt is the skill content, starting
+  with `Active task: <path>`. Spawned sub-agents automatically receive the
+  project `AGENTS.md`; task context is pulled via the pull-based prelude.
 - Skill scripts pass `--platform kerminal` to `get_context.py`; the value is
   used as a platform-scoped context key.
-- Kerminal has no project-level sub-agent definition surface, so Trellis ships
-  no `trellis-implement` / `trellis-check` / `trellis-research` agent prompts
-  here — the workflow skills run those phases inline in the main session.
