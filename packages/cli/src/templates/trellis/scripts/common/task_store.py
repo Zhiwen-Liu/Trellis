@@ -256,6 +256,7 @@ _SUBAGENT_CONFIG_DIRS: tuple[str, ...] = (
     ".zcode",     # ZCode
     ".grok",      # Grok Build
     ".kimi-code", # Kimi Code
+    ".kerminal",  # Kerminal
 )
 _CODEX_CONFIG_DIR = ".codex"
 

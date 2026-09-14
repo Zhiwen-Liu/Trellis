@@ -54,6 +54,7 @@ _KNOWN_PLATFORMS = {
     "trae",
     "grok",
     "kimi",
+    "kerminal",
     "zcode",
     "snow",
     "dsh",

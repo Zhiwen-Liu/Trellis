@@ -6967,6 +6967,29 @@ print(json.dumps({
     }
   });
 
+  it("[kerminal] task.py create creates empty jsonl when Kerminal is the only sub-agent platform", () => {
+    setupTaskRepo();
+    fs.mkdirSync(path.join(tmpDir, ".kerminal"), { recursive: true });
+    const taskScriptPath = path.join(tmpDir, ".trellis", "scripts", "task.py");
+    execSync(
+      `${pythonCmd} ${JSON.stringify(taskScriptPath)} create "kerminal task" --description "regression fixture" --slug kerminal-task --assignee test-dev`,
+      { cwd: tmpDir, encoding: "utf-8", env: sessionEnv() },
+    );
+
+    const tasksDir = path.join(tmpDir, ".trellis", "tasks");
+    const taskName = fs
+      .readdirSync(tasksDir)
+      .find((name) => name.includes("kerminal-task"));
+    expect(taskName).toBeDefined();
+    const taskDir = path.join(tasksDir, taskName as string);
+
+    for (const jsonlName of ["implement.jsonl", "check.jsonl"]) {
+      const jsonlPath = path.join(taskDir, jsonlName);
+      expect(fs.existsSync(jsonlPath), `${jsonlName} should exist`).toBe(true);
+      expect(fs.readFileSync(jsonlPath, "utf-8"), jsonlName).toBe("");
+    }
+  });
+
   it("[issue-373] task.py create does NOT seed jsonl for Codex inline mode", () => {
     setupTaskRepo();
     fs.mkdirSync(path.join(tmpDir, ".codex"), { recursive: true });
@@ -7428,6 +7451,8 @@ print(len(entries))
       "qoder/agents/trellis-check.md",
       "kimi/agents/trellis-implement.md",
       "kimi/agents/trellis-check.md",
+      "kerminal/agents/trellis-implement.md",
+      "kerminal/agents/trellis-check.md",
     ];
 
     for (const relativePath of agentFiles) {
@@ -8996,6 +9021,18 @@ describe("regression: platform additions (beta.9, beta.13, beta.16)", () => {
     expect(AI_TOOLS.kimi.templateContext.agentCapable).toBe(true);
     expect(AI_TOOLS.kimi.templateContext.hasHooks).toBe(false);
     expect(AI_TOOLS.kimi.templateContext.cmdRefPrefix).toBe("/skill:trellis-");
+  });
+
+  it("[kerminal] Kerminal platform is registered as pull-based class-2 with generic sub-agent dispatch", () => {
+    expect(AI_TOOLS).toHaveProperty("kerminal");
+    expect(AI_TOOLS.kerminal.name).toBe("Kerminal");
+    expect(AI_TOOLS.kerminal.configDir).toBe(".kerminal");
+    expect(AI_TOOLS.kerminal.cliFlag).toBe("kerminal");
+    expect(AI_TOOLS.kerminal.supportsAgentSkills).toBe(true);
+    expect(AI_TOOLS.kerminal.hasPythonHooks).toBe(false);
+    expect(AI_TOOLS.kerminal.templateContext.agentCapable).toBe(true);
+    expect(AI_TOOLS.kerminal.templateContext.hasHooks).toBe(false);
+    expect(AI_TOOLS.kerminal.templateContext.cmdRefPrefix).toBe("trellis-");
   });
 
   it("[beta.9] all platforms have consistent required fields", () => {
