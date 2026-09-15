@@ -156,20 +156,12 @@ vite.config.ts.timestamp-*
 .agent-log
 .agent-runner.sh
 
-# OpenCode local config (contains local proxy settings)
-opencode.json
-
-# iFlow local config (if it has local state files)
-.iflow/settings.local.json
-
 # Python cache
 __pycache__/
 *.pyc
 .pytest_cache/
 
 .reference
-
-.trellis/tasks/01-23-eng-blog-research
 
 # External reference code
 third/
@@ -179,12 +171,6 @@ third/
 
 doc/
 smoke_test/
-
-# Claude Code scheduled tasks session lock
-.claude/scheduled_tasks.lock
-
-# Snow CLI generated project configuration and local runtime data
-/.snow/
 
 tmp/
 tmp1/
