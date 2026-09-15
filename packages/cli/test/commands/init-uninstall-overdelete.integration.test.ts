@@ -64,56 +64,55 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
 
   // ----- R1: manifest accuracy after init -----
 
-  it("#R1.1 init does not hash pre-existing .codex/sessions/ user data (issue #221)", async () => {
-    // Repro from the issue body. User has codex chat history before they ever
-    // ran trellis.
+  it("#R1.1 init does not hash pre-existing .kerminal/backups/ user data (issue #221 analog)", async () => {
+    // Repro from the issue body, retargeted at Kerminal: the user has their
+    // own files under the platform config dir before they ever ran trellis.
     const userSession = path.join(
       tmpDir,
-      ".codex",
-      "sessions",
+      ".kerminal",
+      "backups",
       "2026",
       "x.jsonl",
     );
     fs.mkdirSync(path.dirname(userSession), { recursive: true });
     fs.writeFileSync(userSession, "user-chat-data\n");
 
-    await init({ yes: true, codex: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const hashes = loadHashes(tmpDir);
-    expect(hashes).not.toHaveProperty(".codex/sessions/2026/x.jsonl");
-    // Sanity: trellis's own codex files ARE tracked.
+    expect(hashes).not.toHaveProperty(".kerminal/backups/2026/x.jsonl");
+    // Sanity: trellis's own kerminal files ARE tracked.
     const trackedCodex = Object.keys(hashes).filter((k) =>
-      k.startsWith(".codex/"),
+      k.startsWith(".kerminal/"),
     );
     expect(trackedCodex.length).toBeGreaterThan(0);
   });
 
-  it("#R1.2 init does not hash pre-existing .claude/projects/ chat history", async () => {
-    // Catastrophic case: Claude Code stores conversation history in
-    // .claude/projects/<sanitized-cwd>/*.jsonl globally.
+  it("#R1.2 init does not hash pre-existing user skills under the shared .agents/skills/ root", async () => {
+    // The shared skills root is managed by Trellis, but skills the user
+    // already had there before init must not be swept into the manifest —
+    // uninstall would otherwise delete them.
     const userChat = path.join(
       tmpDir,
-      ".claude",
-      "projects",
-      "my-project",
-      "conversation-abc.jsonl",
+      ".agents",
+      "skills",
+      "my-skill",
+      "SKILL.md",
     );
     fs.mkdirSync(path.dirname(userChat), { recursive: true });
-    fs.writeFileSync(userChat, '{"role":"user"}\n');
+    fs.writeFileSync(userChat, "# my own skill\n");
 
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const hashes = loadHashes(tmpDir);
-    expect(hashes).not.toHaveProperty(
-      ".claude/projects/my-project/conversation-abc.jsonl",
-    );
+    expect(hashes).not.toHaveProperty(".agents/skills/my-skill/SKILL.md");
   });
 
   it("#R1.3 init --skip-existing on pre-existing AGENTS.md: file NOT in manifest (PR #271 case)", async () => {
     // User's pre-existing AGENTS.md must not be hashed when init skips it.
     fs.writeFileSync(path.join(tmpDir, "AGENTS.md"), "my own AGENTS.md\n");
 
-    await init({ yes: true, claude: true, skipExisting: true });
+    await init({ yes: true, kerminal: true, skipExisting: true });
 
     const hashes = loadHashes(tmpDir);
     expect(hashes).not.toHaveProperty("AGENTS.md");
@@ -124,7 +123,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
     // track actual writes, not ownership inferred from content equality.
     fs.writeFileSync(path.join(tmpDir, "AGENTS.md"), agentsMdContent);
 
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const hashes = loadHashes(tmpDir);
     expect(hashes).not.toHaveProperty("AGENTS.md");
@@ -132,21 +131,21 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
 
   // ----- R1 → uninstall outcome: user data survives -----
 
-  it("#R1.4 init → uninstall preserves user data under .codex/sessions/", async () => {
+  it("#R1.4 init → uninstall preserves user data under .kerminal/backups/", async () => {
     const userSession = path.join(
       tmpDir,
-      ".codex",
-      "sessions",
+      ".kerminal",
+      "backups",
       "2026",
       "x.jsonl",
     );
     fs.mkdirSync(path.dirname(userSession), { recursive: true });
     fs.writeFileSync(userSession, "user-chat-data\n");
 
-    await init({ yes: true, codex: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
     await uninstall({ yes: true });
 
-    // The user's session JSONL survives.
+    // The user's backup JSONL survives.
     expect(fs.existsSync(userSession)).toBe(true);
     expect(fs.readFileSync(userSession, "utf-8")).toBe("user-chat-data\n");
   });
@@ -154,7 +153,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
   it("#R1.5 init --skip-existing → uninstall preserves user's AGENTS.md", async () => {
     fs.writeFileSync(path.join(tmpDir, "AGENTS.md"), "my own AGENTS.md\n");
 
-    await init({ yes: true, claude: true, skipExisting: true });
+    await init({ yes: true, kerminal: true, skipExisting: true });
     await uninstall({ yes: true });
 
     expect(fs.existsSync(path.join(tmpDir, "AGENTS.md"))).toBe(true);
@@ -171,7 +170,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
     // OUTSIDE the <!-- TRELLIS:START/END --> block — a supported layout that
     // update.ts explicitly preserves. Uninstall must not unlink the whole
     // file and take the user content with it.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
     const agentsPath = path.join(tmpDir, "AGENTS.md");
     // Sanity: Trellis tracked it and wrote the managed block.
     expect(loadHashes(tmpDir)).toHaveProperty("AGENTS.md");
@@ -194,7 +193,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
   it("#R1.7 uninstall still deletes a tracked AGENTS.md that is only the Trellis block", async () => {
     // Normal case: user never edited AGENTS.md, so once the block is stripped
     // nothing user-authored remains and the file is removed.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
     const agentsPath = path.join(tmpDir, "AGENTS.md");
     expect(fs.existsSync(agentsPath)).toBe(true);
 
@@ -207,7 +206,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
 
   it("#R3.1 update silently prunes orphan manifest entries", async () => {
     // First, run a clean init.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     // Then poison the manifest by hand: add an entry for a user-owned file
     // that no platform configurator owns. This simulates the state created
@@ -235,7 +234,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
     // Most catastrophic path: user has poisoned manifest from old install
     // and runs `trellis uninstall` directly. Prune must fire before plan
     // build, otherwise the user file gets unlinked.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const userFile = path.join(
       tmpDir,
@@ -259,7 +258,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
   });
 
   it("#R3.2b uninstall self-heals poisoned pre-existing AGENTS.md", async () => {
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const agentsPath = path.join(tmpDir, "AGENTS.md");
     fs.writeFileSync(agentsPath, "my own AGENTS.md\n");
@@ -279,7 +278,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
     // configurator owns (they're being renamed/deleted). The prune helper
     // must not strip those, otherwise legitimate pending migrations lose
     // their hash records and the migration logic regresses.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     // We can't easily fabricate a real migration entry in this test, but we
     // CAN assert the prune behavior preserves .trellis/ entries which is the
@@ -348,7 +347,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
 
   it("#R2.2 uninstall refuses to run when cwd === $HOME", async () => {
     // Set up a valid trellis project, then pretend its cwd is the homedir.
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
 
     const exitSpy = vi
       .spyOn(process, "exit")
@@ -374,7 +373,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
       process.env.TRELLIS_ALLOW_HOMEDIR = "1";
 
       await withFakeHome(fakeHome, async () => {
-        await init({ yes: true, claude: true, force: true });
+        await init({ yes: true, kerminal: true, force: true });
       });
 
       expect(fs.existsSync(path.join(fakeHome, ".trellis"))).toBe(true);
@@ -392,7 +391,7 @@ describe("init + uninstall: manifest accuracy + homedir guard", () => {
       vi.spyOn(process, "cwd").mockReturnValue(subDir);
 
       await withFakeHome(fakeHome, async () => {
-        await init({ yes: true, claude: true, force: true });
+        await init({ yes: true, kerminal: true, force: true });
       });
 
       expect(fs.existsSync(path.join(subDir, ".trellis"))).toBe(true);

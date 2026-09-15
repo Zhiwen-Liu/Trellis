@@ -46,12 +46,6 @@ import {
   workflowMdTemplate,
 } from "../templates/trellis/index.js";
 import { agentsMdContent } from "../templates/markdown/index.js";
-import {
-  COPILOT_INSTRUCTIONS_BLOCK_END,
-  COPILOT_INSTRUCTIONS_BLOCK_START,
-  COPILOT_INSTRUCTIONS_PATH,
-  getCopilotInstructions,
-} from "../templates/copilot/index.js";
 
 import {
   ALL_MANAGED_DIRS,
@@ -59,8 +53,6 @@ import {
   collectPlatformTemplates,
 } from "../configurators/index.js";
 import { replacePythonCommandLiterals } from "../configurators/shared.js";
-import { preserveCodexAgentModelKeys } from "../configurators/codex.js";
-import { printZcodeSetupHint } from "../configurators/zcode.js";
 import { ensureGitattributes } from "../configurators/workflow.js";
 import { pruneOrphanManifestKeys } from "../utils/manifest-prune.js";
 import {
@@ -112,7 +104,6 @@ interface ChangeAnalysis {
 
 type ConflictAction = "overwrite" | "skip" | "create-new";
 
-const CLAUDE_SETTINGS_PATH = ".claude/settings.json";
 const LEGACY_UNTRACKED_AGENTS_MD_BLOCK_HASHES = new Set<string>([
   // v0.5.0-beta.17 and earlier wrote AGENTS.md but did not hash-track it.
   // This hash is the pristine Trellis-managed block before the Subagents
@@ -245,16 +236,6 @@ function buildAgentsMdTemplate(cwd: string): string {
   );
 }
 
-function buildCopilotInstructionsTemplate(cwd: string): string {
-  return buildManagedBlockTemplate(
-    cwd,
-    COPILOT_INSTRUCTIONS_PATH,
-    getCopilotInstructions(),
-    COPILOT_INSTRUCTIONS_BLOCK_START,
-    COPILOT_INSTRUCTIONS_BLOCK_END,
-  );
-}
-
 function isKnownUntrackedTemplate(
   relativePath: string,
   existingContent: string,
@@ -269,35 +250,6 @@ function isKnownUntrackedTemplate(
   }
 
   return LEGACY_UNTRACKED_AGENTS_MD_BLOCK_HASHES.has(computeHash(managedBlock));
-}
-
-function isSafeUntrackedCopilotInstructionsMerge(
-  relativePath: string,
-  existingContent: string,
-  newContent: string,
-): boolean {
-  if (relativePath !== COPILOT_INSTRUCTIONS_PATH) {
-    return false;
-  }
-
-  if (
-    getManagedBlock(
-      existingContent,
-      COPILOT_INSTRUCTIONS_BLOCK_START,
-      COPILOT_INSTRUCTIONS_BLOCK_END,
-    )
-  ) {
-    return false;
-  }
-
-  return (
-    mergeManagedBlockContent(
-      existingContent,
-      getCopilotInstructions(),
-      COPILOT_INSTRUCTIONS_BLOCK_START,
-      COPILOT_INSTRUCTIONS_BLOCK_END,
-    ) === newContent
-  );
 }
 
 /**
@@ -654,93 +606,6 @@ export function applyConfigSectionsAdded(
  * Collect all template files that should be managed by update
  * Only collects templates for platforms that are already configured (have directories)
  */
-/**
- * Detect if legacy Codex upgrade is needed.
- *
- * Old Trellis versions used `.agents/skills/` as codex's configDir.
- * New versions use `.codex/` for Codex-specific config and `.agents/skills/`
- * as a shared layer.
- *
- * Detection: Trellis-tracked hashes contain `.agents/skills/` entries
- * but `.codex/` does not exist. This avoids misclassifying repos that
- * have `.agents/skills/` from other tools (Kimi CLI, Amp, etc.).
- *
- * Returns true if upgrade is needed. Does NOT perform the upgrade —
- * caller should run configurePlatform("codex") after backup/confirm.
- */
-function needsCodexUpgrade(cwd: string): boolean {
-  if (fs.existsSync(path.join(cwd, ".codex"))) {
-    return false;
-  }
-
-  // Legacy Codex marker: old Codex installs tracked command-as-skill files
-  // under `.agents/skills/` before `.codex/` existed as a separate config dir.
-  // A current or future non-Codex platform may own those paths too, so do not
-  // trigger the Codex backfill when a configured non-Codex platform declares
-  // the marker paths in its templates.
-  const hashes = loadHashes(cwd);
-  const legacyMarkers = [
-    ".agents/skills/trellis-continue/SKILL.md",
-    ".agents/skills/trellis-finish-work/SKILL.md",
-  ];
-  const hasLegacyMarker = legacyMarkers.some(
-    (key) => hashes[key] !== undefined,
-  );
-  if (!hasLegacyMarker) {
-    return false;
-  }
-
-  for (const platformId of getConfiguredPlatforms(cwd)) {
-    if (platformId === "codex") {
-      continue;
-    }
-    const platformFiles = collectPlatformTemplates(platformId);
-    if (platformFiles && legacyMarkers.some((key) => platformFiles.has(key))) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function preserveExistingClaudeStatusLine(
-  cwd: string,
-  templates: Map<string, string>,
-): void {
-  const newSettingsContent = templates.get(CLAUDE_SETTINGS_PATH);
-  if (!newSettingsContent) return;
-
-  const settingsPath = path.join(cwd, CLAUDE_SETTINGS_PATH);
-  if (!fs.existsSync(settingsPath)) return;
-
-  try {
-    const existingSettings = JSON.parse(
-      fs.readFileSync(settingsPath, "utf-8"),
-    ) as Record<string, unknown>;
-
-    if (!Object.prototype.hasOwnProperty.call(existingSettings, "statusLine")) {
-      return;
-    }
-
-    const newSettings = JSON.parse(newSettingsContent) as Record<
-      string,
-      unknown
-    >;
-
-    if (Object.prototype.hasOwnProperty.call(newSettings, "statusLine")) {
-      return;
-    }
-
-    newSettings.statusLine = existingSettings.statusLine;
-    templates.set(
-      CLAUDE_SETTINGS_PATH,
-      `${JSON.stringify(newSettings, null, 2)}\n`,
-    );
-  } catch {
-    // Invalid local JSON is handled by the normal conflict path.
-  }
-}
-
 function preserveExistingRegistryConfig(cwd: string, template: string): string {
   const registry = loadSpecRegistryConfig(cwd);
   if (!registry) return template;
@@ -855,7 +720,6 @@ async function collectRegistrySpecTemplates(
 
 async function collectTemplateFiles(
   cwd: string,
-  extraPlatforms?: Set<AITool>,
   /**
    * Bypass `update.skip` when collecting templates. Enable this for breaking
    * releases so new files (e.g. `continue.md` added in 0.5.0) and template
@@ -868,11 +732,6 @@ async function collectTemplateFiles(
 ): Promise<Map<string, string>> {
   const files = new Map<string, string>();
   const platforms = getConfiguredPlatforms(cwd);
-  if (extraPlatforms) {
-    for (const p of extraPlatforms) {
-      platforms.add(p);
-    }
-  }
 
   // Python scripts (single source of truth: getAllScripts())
   for (const [scriptPath, content] of getAllScripts()) {
@@ -912,25 +771,8 @@ async function collectTemplateFiles(
       for (const [filePath, content] of platformFiles) {
         files.set(filePath, content);
       }
-      if (platformId === "copilot") {
-        files.set(
-          COPILOT_INSTRUCTIONS_PATH,
-          buildCopilotInstructionsTemplate(cwd),
-        );
-      }
     }
   }
-
-  // Users configure sub-agent models by editing `model` /
-  // `model_reasoning_effort` directly on the generated agent tomls. Preserve
-  // those two keys from the on-disk files into the freshly rendered desired
-  // content so a project whose only local edit is these keys is not flagged
-  // as a modified-file conflict by the hash comparison below.
-  if (platforms.has("codex")) {
-    preserveCodexAgentModelKeys(cwd, files);
-  }
-
-  preserveExistingClaudeStatusLine(cwd, files);
 
   for (const [filePath, content] of await collectRegistrySpecTemplates(cwd)) {
     files.set(filePath, content);
@@ -1018,13 +860,7 @@ function analyzeChanges(
         if (
           (storedHash && storedHash === currentHash) ||
           (!storedHash &&
-            isKnownUntrackedTemplate(relativePath, existingContent)) ||
-          (!storedHash &&
-            isSafeUntrackedCopilotInstructionsMerge(
-              relativePath,
-              existingContent,
-              newContent,
-            ))
+            isKnownUntrackedTemplate(relativePath, existingContent))
         ) {
           // Either the tracked hash matches, or this is a known pristine template
           // from before the path was hash-tracked. Safe to auto-update.
@@ -2169,7 +2005,6 @@ export async function update(options: UpdateOptions): Promise<void> {
 
   // Load template hashes for modification detection
   let hashes = loadHashes(cwd);
-  const zcodeConfigured = getConfiguredPlatforms(cwd).has("zcode");
   const isFirstHashTracking = Object.keys(hashes).length === 0;
 
   // Handle unknown version - skip regular migrations but safe-file-delete still runs
@@ -2186,28 +2021,11 @@ export async function update(options: UpdateOptions): Promise<void> {
     );
   }
 
-  // Detect legacy Codex (has .agents/skills/ tracked by Trellis but no .codex/)
-  // NOTE: this MUST happen before pruneOrphanManifestKeys below, since the
-  // detector reads the raw manifest looking for .agents/skills/ markers that
-  // the prune step would otherwise consider orphans (codex hasn't been added
-  // to configuredPlatforms yet at this point).
-  const codexUpgradeNeeded = needsCodexUpgrade(cwd);
-  if (codexUpgradeNeeded) {
-    console.log(
-      chalk.yellow(
-        "  Legacy Codex detected: .agents/skills/ tracked without .codex/ — will create .codex/ directory",
-      ),
-    );
-  }
-
   // Self-heal poisoned manifests: prune entries that no current platform
   // configurator owns. This silently removes user-owned paths that early
   // buggy versions of `trellis init` over-hashed (e.g. .codex/sessions/*).
-  // Include codex in known-platforms when codexUpgradeNeeded so legacy Codex
-  // markers under .agents/skills/ survive into the upgrade flow.
   {
     const configuredPlatforms = new Set<AITool>(getConfiguredPlatforms(cwd));
-    if (codexUpgradeNeeded) configuredPlatforms.add("codex");
     const prune = pruneOrphanManifestKeys(
       cwd,
       [...configuredPlatforms],
@@ -2241,11 +2059,7 @@ export async function update(options: UpdateOptions): Promise<void> {
     })();
 
   // Collect templates (used for both migration classification and change analysis)
-  const templates = await collectTemplateFiles(
-    cwd,
-    codexUpgradeNeeded ? new Set<AITool>(["codex"]) : undefined,
-    breakingBypass,
-  );
+  const templates = await collectTemplateFiles(cwd, breakingBypass);
 
   // Load update.skip paths (used for both safe-file-delete and template collection)
   const skipPaths = loadUpdateSkipPaths(cwd);
@@ -2463,7 +2277,6 @@ export async function update(options: UpdateOptions): Promise<void> {
         );
       }
     }
-    if (zcodeConfigured) printZcodeSetupHint();
     return;
   }
 
@@ -2880,8 +2693,6 @@ export async function update(options: UpdateOptions): Promise<void> {
       }
     }
   }
-
-  if (zcodeConfigured) printZcodeSetupHint();
 
   // Display breaking change warnings at the very end (so they don't scroll off screen)
   if (cliVsProject > 0 && projectVersion !== "unknown") {

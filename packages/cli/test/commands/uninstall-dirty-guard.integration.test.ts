@@ -67,7 +67,7 @@ describe.skipIf(!canRun)("uninstall uncommitted-data guard", () => {
       value: true,
     });
     delete process.env.TRELLIS_ALLOW_DIRTY_UNINSTALL;
-    await init({ yes: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
   });
 
   afterEach(() => {

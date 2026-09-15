@@ -45,7 +45,7 @@
 | **Task-centered workflow** | Keep PRDs, implementation context, review context, and task status in `.trellis/tasks/` so AI work stays structured. |
 | **Project memory** | Journals in `.trellis/workspace/` preserve what happened last time, so each new session starts with real context. |
 | **Team-shared standards** | Specs live in the repo, so one person's hard-won workflow or rule can benefit the whole team. |
-| **Kerminal-first** | This fork evolves the Kerminal integration only — upstream Trellis supported 23 AI coding platforms up to 0.6.x (see upstream for those). |
+| **Multi-platform setup** | Bring the same Trellis structure to 23 AI coding platforms instead of rebuilding your workflow per tool. |
 
 ## Prerequisites:
 
@@ -65,7 +65,7 @@ trellis init --kerminal -u your-name
 trellis init --cursor --opencode --codex -u your-name
 ```
 
-To hack on the source instead:
+(First npm publish pending — until `@zhiwenliu/trellis` is on the registry, build from source:)
 
 ```bash
 git clone https://github.com/Zhiwen-Liu/Trellis.git

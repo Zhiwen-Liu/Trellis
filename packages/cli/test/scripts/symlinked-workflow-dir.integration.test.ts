@@ -25,11 +25,6 @@ const TEMPLATE_SCRIPTS = path.resolve(
   __dirname,
   "../../src/templates/trellis/scripts",
 );
-const HOOK_PATH = path.resolve(
-  __dirname,
-  "../../src/templates/shared-hooks/inject-subagent-context.py",
-);
-
 const TASK = "08-21-demo";
 
 function hasPython(): boolean {
@@ -55,26 +50,6 @@ function runTask(
     },
   );
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
-}
-
-/** Run a Python snippet with the hook module preloaded as `mod`. */
-function runHookProbe(repo: string, code: string): string {
-  const probePath = path.join(repo, "probe.py");
-  const script = `
-import sys, importlib.util
-sys.argv[0] = ${JSON.stringify(path.join(repo, "hook.py"))}
-REPO_ROOT = ${JSON.stringify(repo)}
-spec = importlib.util.spec_from_file_location("h", ${JSON.stringify(HOOK_PATH)})
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-${code}
-`;
-  fs.writeFileSync(probePath, script, "utf-8");
-  const r = spawnSync("python3", [probePath], { cwd: repo, encoding: "utf-8" });
-  if (r.status !== 0) {
-    throw new Error(`probe failed (rc=${r.status}): ${r.stderr}`);
-  }
-  return r.stdout;
 }
 
 describe.skipIf(!hasPython() || process.platform === "win32")(
@@ -149,40 +124,6 @@ describe.skipIf(!hasPython() || process.platform === "win32")(
         JSON.parse(fs.readFileSync(path.join(outside, "task.json"), "utf-8"))
           .meta,
       ).toEqual({});
-    });
-
-    it("hook injects task artifacts and jsonl refs through the symlink", () => {
-      fs.writeFileSync(
-        path.join(store, "tasks", TASK, "prd.md"),
-        "PRD THROUGH SYMLINK\n",
-      );
-      fs.writeFileSync(
-        path.join(store, "tasks", TASK, "implement.jsonl"),
-        JSON.stringify({
-          file: `.trellis/tasks/${TASK}/task.json`,
-          reason: "self",
-        }) + "\n",
-      );
-      const out = runHookProbe(
-        repo,
-        `print(mod.get_implement_context(REPO_ROOT, ${JSON.stringify(`.trellis/tasks/${TASK}`)}))`,
-      );
-      expect(out).toContain("PRD THROUGH SYMLINK");
-      expect(out).toContain(`=== .trellis/tasks/${TASK}/task.json ===`);
-    });
-
-    it("hook still refuses a jsonl ref outside both containment bases", () => {
-      const secret = path.join(base, "secret.txt");
-      fs.writeFileSync(secret, "TOP SECRET CONTENT");
-      fs.writeFileSync(
-        path.join(store, "tasks", TASK, "implement.jsonl"),
-        JSON.stringify({ file: secret, reason: "escape" }) + "\n",
-      );
-      const out = runHookProbe(
-        repo,
-        `print(mod.get_implement_context(REPO_ROOT, ${JSON.stringify(`.trellis/tasks/${TASK}`)}))`,
-      );
-      expect(out).not.toContain("TOP SECRET CONTENT");
     });
   },
 );

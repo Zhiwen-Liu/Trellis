@@ -34,20 +34,20 @@ describe("cleanupEmptyDirs", () => {
   });
 
   it("removes empty subdirectory under managed path", () => {
-    // Create .claude/commands/ (empty)
-    fs.mkdirSync(path.join(tmpDir, ".claude", "commands"), { recursive: true });
-    cleanupEmptyDirs(tmpDir, ".claude/commands");
-    expect(fs.existsSync(path.join(tmpDir, ".claude", "commands"))).toBe(false);
+    // Create .kerminal/skills/ (empty)
+    fs.mkdirSync(path.join(tmpDir, ".kerminal", "skills"), { recursive: true });
+    cleanupEmptyDirs(tmpDir, ".kerminal/skills");
+    expect(fs.existsSync(path.join(tmpDir, ".kerminal", "skills"))).toBe(false);
   });
 
   it("does not remove non-empty directory", () => {
-    fs.mkdirSync(path.join(tmpDir, ".claude", "commands"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, ".kerminal", "skills"), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, ".claude", "commands", "file.md"),
+      path.join(tmpDir, ".kerminal", "skills", "file.md"),
       "content",
     );
-    cleanupEmptyDirs(tmpDir, ".claude/commands");
-    expect(fs.existsSync(path.join(tmpDir, ".claude", "commands"))).toBe(true);
+    cleanupEmptyDirs(tmpDir, ".kerminal/skills");
+    expect(fs.existsSync(path.join(tmpDir, ".kerminal", "skills"))).toBe(true);
   });
 
   it("does not remove directories outside managed paths", () => {

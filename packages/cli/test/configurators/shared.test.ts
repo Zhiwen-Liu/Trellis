@@ -2,11 +2,9 @@ import { describe, expect, it, afterEach } from "vitest";
 import {
   getPythonCommandForPlatform,
   replacePythonCommandLiterals,
-  resolveAllAsSkillsNeutral,
   resolvePlaceholders,
   resolvePlaceholdersNeutral,
   resolveSkillsNeutral,
-  wrapWithOmpFrontmatter,
 } from "../../src/configurators/shared.js";
 import { AI_TOOLS } from "../../src/types/ai-tools.js";
 import type { TemplateContext } from "../../src/types/ai-tools.js";
@@ -15,31 +13,33 @@ import type { TemplateContext } from "../../src/types/ai-tools.js";
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const claudeCtx: TemplateContext = {
+const kerminalCtx: TemplateContext = {
+  cmdRefPrefix: "trellis-",
+  executorAI: "Bash scripts or tool calls",
+  userActionLabel: "Skills",
+  agentCapable: true,
+  hasHooks: false,
+  cliFlag: "kerminal",
+};
+
+// A hook-based variant to exercise the conditional-block machinery both ways.
+const hooksCtx: TemplateContext = {
   cmdRefPrefix: "/trellis:",
   executorAI: "Bash scripts or Task calls",
   userActionLabel: "Slash commands",
   agentCapable: true,
   hasHooks: true,
-  cliFlag: "claude",
+  cliFlag: "kerminal",
 };
 
-const codexCtx: TemplateContext = {
-  cmdRefPrefix: "$",
-  executorAI: "Bash scripts or tool calls",
-  userActionLabel: "Skills",
-  agentCapable: true,
-  hasHooks: false,
-  cliFlag: "codex",
-};
-
-const cursorCtx: TemplateContext = {
+// An agent-less variant for the negated-conditional paths.
+const inlineCtx: TemplateContext = {
   cmdRefPrefix: "/trellis-",
   executorAI: "Bash scripts or file reads",
   userActionLabel: "Slash commands",
   agentCapable: false,
   hasHooks: false,
-  cliFlag: "cursor",
+  cliFlag: "kerminal",
 };
 
 // ---------------------------------------------------------------------------
@@ -134,10 +134,6 @@ describe("replacePythonCommandLiterals", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// getPythonCommandForPlatform
-// ---------------------------------------------------------------------------
-
 describe("getPythonCommandForPlatform", () => {
   it("returns python on Windows", () => {
     expect(getPythonCommandForPlatform("win32")).toBe("python");
@@ -175,45 +171,37 @@ describe("resolvePlaceholders", () => {
   // -----------------------------------------------------------------------
 
   describe("{{CMD_REF:name}}", () => {
-    it("resolves with /trellis: prefix (Claude)", () => {
+    it("resolves with the context's prefix", () => {
       const result = resolvePlaceholders(
         "See {{CMD_REF:brainstorm}} for details",
-        claudeCtx,
+        hooksCtx,
       );
       expect(result).toBe("See /trellis:brainstorm for details");
     });
 
-    it("resolves with $ prefix (Codex)", () => {
+    it("resolves with a bare-name prefix", () => {
       const result = resolvePlaceholders(
         "Run {{CMD_REF:check}} after coding",
-        codexCtx,
+        kerminalCtx,
       );
-      expect(result).toBe("Run $check after coding");
-    });
-
-    it("resolves with /trellis- prefix (Cursor)", () => {
-      const result = resolvePlaceholders(
-        "Use {{CMD_REF:finish-work}} when done",
-        cursorCtx,
-      );
-      expect(result).toBe("Use /trellis-finish-work when done");
+      expect(result).toBe("Run trellis-check after coding");
     });
 
     it("handles multiple CMD_REF in one template", () => {
       const input =
         "{{CMD_REF:start}} then {{CMD_REF:brainstorm}} then {{CMD_REF:check}}";
-      expect(resolvePlaceholders(input, claudeCtx)).toBe(
+      expect(resolvePlaceholders(input, hooksCtx)).toBe(
         "/trellis:start then /trellis:brainstorm then /trellis:check",
       );
     });
 
     it("handles hyphenated command names", () => {
-      expect(resolvePlaceholders("{{CMD_REF:finish-work}}", claudeCtx)).toBe(
+      expect(resolvePlaceholders("{{CMD_REF:finish-work}}", hooksCtx)).toBe(
         "/trellis:finish-work",
       );
       expect(
-        resolvePlaceholders("{{CMD_REF:check-cross-layer}}", codexCtx),
-      ).toBe("$check-cross-layer");
+        resolvePlaceholders("{{CMD_REF:check-cross-layer}}", kerminalCtx),
+      ).toBe("trellis-check-cross-layer");
     });
   });
 
@@ -224,26 +212,29 @@ describe("resolvePlaceholders", () => {
   describe("simple substitutions", () => {
     it("resolves {{EXECUTOR_AI}}", () => {
       expect(
-        resolvePlaceholders("| `[AI]` | {{EXECUTOR_AI}} |", claudeCtx),
+        resolvePlaceholders("| `[AI]` | {{EXECUTOR_AI}} |", hooksCtx),
       ).toBe("| `[AI]` | Bash scripts or Task calls |");
       expect(
-        resolvePlaceholders("| `[AI]` | {{EXECUTOR_AI}} |", codexCtx),
+        resolvePlaceholders("| `[AI]` | {{EXECUTOR_AI}} |", kerminalCtx),
       ).toBe("| `[AI]` | Bash scripts or tool calls |");
     });
 
     it("resolves {{USER_ACTION_LABEL}}", () => {
       expect(
-        resolvePlaceholders("| `[USER]` | {{USER_ACTION_LABEL}} |", claudeCtx),
+        resolvePlaceholders("| `[USER]` | {{USER_ACTION_LABEL}} |", hooksCtx),
       ).toBe("| `[USER]` | Slash commands |");
       expect(
-        resolvePlaceholders("| `[USER]` | {{USER_ACTION_LABEL}} |", codexCtx),
+        resolvePlaceholders(
+          "| `[USER]` | {{USER_ACTION_LABEL}} |",
+          kerminalCtx,
+        ),
       ).toBe("| `[USER]` | Skills |");
     });
 
     it("resolves {{PYTHON_CMD}} alongside context placeholders", () => {
       const result = resolvePlaceholders(
         "{{PYTHON_CMD}} ./.trellis/scripts/task.py and {{CMD_REF:start}}",
-        claudeCtx,
+        hooksCtx,
       );
       const py = process.platform === "win32" ? "python" : "python3";
       expect(result).toBe(
@@ -267,14 +258,14 @@ describe("resolvePlaceholders", () => {
       ].join("\n");
 
       it("includes block when agentCapable=true", () => {
-        const result = resolvePlaceholders(template, claudeCtx);
+        const result = resolvePlaceholders(template, kerminalCtx);
         expect(result).toContain("Call Implement Agent");
         expect(result).toContain("Before");
         expect(result).toContain("After");
       });
 
       it("removes block when agentCapable=false", () => {
-        const result = resolvePlaceholders(template, cursorCtx);
+        const result = resolvePlaceholders(template, inlineCtx);
         expect(result).not.toContain("Call Implement Agent");
         expect(result).toContain("Before");
         expect(result).toContain("After");
@@ -289,12 +280,12 @@ describe("resolvePlaceholders", () => {
       ].join("\n");
 
       it("removes block when agentCapable=true", () => {
-        const result = resolvePlaceholders(template, claudeCtx);
+        const result = resolvePlaceholders(template, kerminalCtx);
         expect(result).not.toContain("Implement the changes directly");
       });
 
       it("includes block when agentCapable=false", () => {
-        const result = resolvePlaceholders(template, cursorCtx);
+        const result = resolvePlaceholders(template, inlineCtx);
         expect(result).toContain("Implement the changes directly");
       });
     });
@@ -309,14 +300,14 @@ describe("resolvePlaceholders", () => {
         "{{/HAS_HOOKS}}",
       ].join("\n");
 
-      it("Claude (hasHooks=true) gets hook text", () => {
-        const result = resolvePlaceholders(template, claudeCtx);
+      it("hasHooks=true gets hook text", () => {
+        const result = resolvePlaceholders(template, hooksCtx);
         expect(result).toContain("auto-injected by hook");
         expect(result).not.toContain("read specs manually");
       });
 
-      it("Codex (hasHooks=false) gets manual text", () => {
-        const result = resolvePlaceholders(template, codexCtx);
+      it("hasHooks=false gets manual text", () => {
+        const result = resolvePlaceholders(template, kerminalCtx);
         expect(result).not.toContain("auto-injected by hook");
         expect(result).toContain("read specs manually");
       });
@@ -338,24 +329,24 @@ describe("resolvePlaceholders", () => {
         "{{/AGENT_CAPABLE}}",
       ].join("\n");
 
-      it("Claude (agent+hooks): agents + hook injection", () => {
-        const result = resolvePlaceholders(template, claudeCtx);
+      it("agent+hooks: agents + hook injection", () => {
+        const result = resolvePlaceholders(template, hooksCtx);
         expect(result).toContain("Agents available");
         expect(result).toContain("Hook injection active");
         expect(result).not.toContain("No hooks");
         expect(result).not.toContain("No agents");
       });
 
-      it("Codex (agent, no hooks): agents + manual injection", () => {
-        const result = resolvePlaceholders(template, codexCtx);
+      it("agent, no hooks: agents + manual injection", () => {
+        const result = resolvePlaceholders(template, kerminalCtx);
         expect(result).toContain("Agents available");
         expect(result).not.toContain("Hook injection active");
         expect(result).toContain("No hooks, manual injection");
         expect(result).not.toContain("No agents");
       });
 
-      it("Cursor (no agent, no hooks): inline only", () => {
-        const result = resolvePlaceholders(template, cursorCtx);
+      it("no agent, no hooks: inline only", () => {
+        const result = resolvePlaceholders(template, inlineCtx);
         expect(result).not.toContain("Agents available");
         expect(result).not.toContain("Hook injection");
         expect(result).toContain("No agents, do it inline");
@@ -371,16 +362,12 @@ describe("resolvePlaceholders", () => {
     it("collapses 3+ consecutive blank lines to 2", () => {
       const template =
         "A\n\n{{#AGENT_CAPABLE}}\nRemoved\n{{/AGENT_CAPABLE}}\n\nB";
-      const result = resolvePlaceholders(template, cursorCtx);
+      const result = resolvePlaceholders(template, inlineCtx);
       expect(result).not.toMatch(/\n{3,}/);
       expect(result).toContain("A");
       expect(result).toContain("B");
     });
   });
-
-  // -----------------------------------------------------------------------
-  // Edge cases
-  // -----------------------------------------------------------------------
 
   // -----------------------------------------------------------------------
   // CLI_FLAG substitution (migrate-flow-bugs Bug B fix: platform propagation)
@@ -389,14 +376,17 @@ describe("resolvePlaceholders", () => {
   describe("{{CLI_FLAG}}", () => {
     it("substitutes to the platform's cliFlag value", () => {
       const input = "--platform {{CLI_FLAG}}";
-      expect(resolvePlaceholders(input, claudeCtx)).toBe("--platform claude");
-      expect(resolvePlaceholders(input, codexCtx)).toBe("--platform codex");
-      expect(resolvePlaceholders(input, cursorCtx)).toBe("--platform cursor");
+      expect(resolvePlaceholders(input, kerminalCtx)).toBe(
+        "--platform kerminal",
+      );
+      expect(resolvePlaceholders(input, hooksCtx)).toBe("--platform kerminal");
     });
 
     it("substitutes multiple occurrences in one string", () => {
       const input = "a={{CLI_FLAG}} b={{CLI_FLAG}}";
-      expect(resolvePlaceholders(input, codexCtx)).toBe("a=codex b=codex");
+      expect(resolvePlaceholders(input, kerminalCtx)).toBe(
+        "a=kerminal b=kerminal",
+      );
     });
 
     it("leaves {{CLI_FLAG}} literal when no context is provided", () => {
@@ -408,81 +398,79 @@ describe("resolvePlaceholders", () => {
       const input =
         '{{PYTHON_CMD}} ./.trellis/scripts/task.py init-context "$TASK_DIR" <type> --platform {{CLI_FLAG}}';
       const py = process.platform === "win32" ? "python" : "python3";
-      expect(resolvePlaceholders(input, codexCtx)).toBe(
-        `${py} ./.trellis/scripts/task.py init-context "$TASK_DIR" <type> --platform codex`,
+      expect(resolvePlaceholders(input, kerminalCtx)).toBe(
+        `${py} ./.trellis/scripts/task.py init-context "$TASK_DIR" <type> --platform kerminal`,
       );
     });
   });
 
   describe("edge cases", () => {
     it("handles empty content", () => {
-      expect(resolvePlaceholders("", claudeCtx)).toBe("");
+      expect(resolvePlaceholders("", kerminalCtx)).toBe("");
     });
 
     it("handles content with no placeholders", () => {
       const plain = "# Just a heading\n\nSome text.";
-      expect(resolvePlaceholders(plain, claudeCtx)).toBe(plain);
+      expect(resolvePlaceholders(plain, kerminalCtx)).toBe(plain);
     });
 
     it("does not resolve unknown placeholders", () => {
       const input = "{{UNKNOWN}} and {{#UNKNOWN_FLAG}}x{{/UNKNOWN_FLAG}}";
-      expect(resolvePlaceholders(input, claudeCtx)).toBe(input);
+      expect(resolvePlaceholders(input, kerminalCtx)).toBe(input);
     });
   });
 });
 
 // ---------------------------------------------------------------------------
 // resolvePlaceholdersNeutral — neutral CMD_REF for shared `.agents/skills/`
-// (issue #224 fix: avoid Codex+Gemini last-writer-wins on identical files)
+// (issue #224 fix: avoid last-writer-wins on identical files when multiple
+// platforms share the skills root)
 // ---------------------------------------------------------------------------
 
 describe("resolvePlaceholdersNeutral", () => {
   it("renders {{CMD_REF:name}} as `name` (Trellis command) — platform-neutral", () => {
     expect(
-      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", claudeCtx),
+      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", kerminalCtx),
     ).toBe("See `brainstorm` (Trellis command)");
     expect(
-      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", codexCtx),
+      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", hooksCtx),
     ).toBe("See `brainstorm` (Trellis command)");
   });
 
-  it("produces byte-identical CMD_REF output across platforms", () => {
+  it("produces byte-identical CMD_REF output across contexts", () => {
     const input =
       "Run {{CMD_REF:check}} then {{CMD_REF:finish-work}} after coding.";
-    const claudeOut = resolvePlaceholdersNeutral(input, claudeCtx);
-    const codexOut = resolvePlaceholdersNeutral(input, codexCtx);
-    const cursorOut = resolvePlaceholdersNeutral(input, cursorCtx);
-    expect(claudeOut).toBe(codexOut);
-    expect(codexOut).toBe(cursorOut);
+    const a = resolvePlaceholdersNeutral(input, kerminalCtx);
+    const b = resolvePlaceholdersNeutral(input, hooksCtx);
+    const c = resolvePlaceholdersNeutral(input, inlineCtx);
+    expect(a).toBe(b);
+    expect(b).toBe(c);
   });
 
   it("still resolves {{PYTHON_CMD}}", () => {
     const result = resolvePlaceholdersNeutral(
       "{{PYTHON_CMD}} script.py",
-      claudeCtx,
+      kerminalCtx,
     );
     const py = process.platform === "win32" ? "python" : "python3";
     expect(result).toBe(`${py} script.py`);
   });
 
-  it("still resolves {{CLI_FLAG}} per platform (used by Codex-only command-as-skill files)", () => {
+  it("still resolves {{CLI_FLAG}} per platform", () => {
     expect(
-      resolvePlaceholdersNeutral("--platform {{CLI_FLAG}}", codexCtx),
-    ).toBe("--platform codex");
-    expect(
-      resolvePlaceholdersNeutral("--platform {{CLI_FLAG}}", claudeCtx),
-    ).toBe("--platform claude");
+      resolvePlaceholdersNeutral("--platform {{CLI_FLAG}}", kerminalCtx),
+    ).toBe("--platform kerminal");
   });
 
   it("still resolves {{EXECUTOR_AI}} and {{USER_ACTION_LABEL}} per platform", () => {
     // Defensive: not used in current shared skills, but kept functional for
     // future templates.
-    expect(resolvePlaceholdersNeutral("{{EXECUTOR_AI}}", claudeCtx)).toBe(
+    expect(resolvePlaceholdersNeutral("{{EXECUTOR_AI}}", hooksCtx)).toBe(
       "Bash scripts or Task calls",
     );
-    expect(resolvePlaceholdersNeutral("{{USER_ACTION_LABEL}}", codexCtx)).toBe(
-      "Skills",
-    );
+    expect(
+      resolvePlaceholdersNeutral("{{USER_ACTION_LABEL}}", kerminalCtx),
+    ).toBe("Skills");
   });
 
   it("still applies conditional blocks per context", () => {
@@ -494,10 +482,10 @@ describe("resolvePlaceholdersNeutral", () => {
       "Inline edit",
       "{{/AGENT_CAPABLE}}",
     ].join("\n");
-    expect(resolvePlaceholdersNeutral(template, claudeCtx)).toContain(
+    expect(resolvePlaceholdersNeutral(template, kerminalCtx)).toContain(
       "Spawn agent",
     );
-    expect(resolvePlaceholdersNeutral(template, cursorCtx)).toContain(
+    expect(resolvePlaceholdersNeutral(template, inlineCtx)).toContain(
       "Inline edit",
     );
   });
@@ -508,31 +496,28 @@ describe("resolvePlaceholdersNeutral", () => {
   });
 
   it("handles empty content", () => {
-    expect(resolvePlaceholdersNeutral("", claudeCtx)).toBe("");
+    expect(resolvePlaceholdersNeutral("", kerminalCtx)).toBe("");
   });
 });
 
 // ---------------------------------------------------------------------------
-// resolveSkillsNeutral / resolveAllAsSkillsNeutral — cross-platform parity
-// for `.agents/skills/` writes
+// resolveSkillsNeutral — shared `.agents/skills/` writes
 // ---------------------------------------------------------------------------
 
-describe("resolveSkillsNeutral / resolveAllAsSkillsNeutral", () => {
-  it("resolveSkillsNeutral produces byte-identical output for Codex and Gemini", () => {
-    const codexSkills = resolveSkillsNeutral(AI_TOOLS.codex.templateContext);
-    const geminiSkills = resolveSkillsNeutral(AI_TOOLS.gemini.templateContext);
-    expect(codexSkills.length).toBe(geminiSkills.length);
-    for (let i = 0; i < codexSkills.length; i++) {
-      expect(codexSkills[i].name).toBe(geminiSkills[i].name);
-      expect(codexSkills[i].content).toBe(geminiSkills[i].content);
+describe("resolveSkillsNeutral", () => {
+  it("uses the kerminal template context from the registry", () => {
+    const skills = resolveSkillsNeutral(AI_TOOLS.kerminal.templateContext);
+    expect(skills.length).toBeGreaterThan(0);
+    for (const skill of skills) {
+      expect(skill.name).toMatch(/^trellis-/);
+      expect(skill.content).toContain(`name: ${skill.name}`);
     }
   });
 
-  it("resolveSkillsNeutral renders CMD_REF without platform-specific prefix", () => {
+  it("renders CMD_REF without platform-specific prefix", () => {
     // The neutral output must not contain platform-prefixed tokens for any
-    // command that CMD_REF references in the shared skills (Codex `$name`,
-    // Claude `/trellis:name`, Cursor `/trellis-name`).
-    const neutral = resolveSkillsNeutral(AI_TOOLS.codex.templateContext);
+    // command that CMD_REF references in the shared skills.
+    const neutral = resolveSkillsNeutral(AI_TOOLS.kerminal.templateContext);
     const cmdRefNames = [
       "start",
       "brainstorm",
@@ -545,74 +530,17 @@ describe("resolveSkillsNeutral / resolveAllAsSkillsNeutral", () => {
       for (const name of cmdRefNames) {
         expect(
           skill.content,
-          `${skill.name} leaks Codex prefix for ${name}`,
+          `${skill.name} leaks prefix for ${name}`,
         ).not.toContain(`$${name}`);
         expect(
           skill.content,
-          `${skill.name} leaks Claude prefix for ${name}`,
+          `${skill.name} leaks prefix for ${name}`,
         ).not.toContain(`/trellis:${name}`);
         expect(
           skill.content,
-          `${skill.name} leaks Cursor prefix for ${name}`,
+          `${skill.name} leaks prefix for ${name}`,
         ).not.toContain(`/trellis-${name}`);
       }
     }
-  });
-
-  it("resolveAllAsSkillsNeutral keeps shared common skills byte-identical to resolveSkillsNeutral", () => {
-    const all = resolveAllAsSkillsNeutral(AI_TOOLS.codex.templateContext);
-    const commonSkills = resolveSkillsNeutral(AI_TOOLS.codex.templateContext);
-    const sharedNames = new Set(commonSkills.map((s) => s.name));
-    const allShared = all.filter((s) => sharedNames.has(s.name));
-    expect(allShared.length).toBe(commonSkills.length);
-    for (const skill of commonSkills) {
-      const match = allShared.find((s) => s.name === skill.name);
-      expect(match?.content).toBe(skill.content);
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// wrapWithOmpFrontmatter — OMP command YAML frontmatter
-// ---------------------------------------------------------------------------
-
-describe("wrapWithOmpFrontmatter", () => {
-  it("wraps continue command with description-only frontmatter", () => {
-    const content =
-      "# Continue Current Task\n\nResume work on the current task.";
-    const result = wrapWithOmpFrontmatter("continue", content);
-    expect(result).toMatch(/^---\ndescription: .+\n---\n\n/);
-    expect(result).not.toContain("# Continue Current Task");
-    expect(result).toContain("Resume work on the current task.");
-    expect(result).not.toContain("argument-hint");
-  });
-
-  it("wraps finish-work command with description + argument-hint", () => {
-    const content = "# Finish Work\n\nWrap up the current session.";
-    const result = wrapWithOmpFrontmatter("finish-work", content);
-    expect(result).toMatch(
-      /^---\ndescription: .+\nargument-hint: "\[task-name\]"\n---\n\n/,
-    );
-    expect(result).not.toContain("# Finish Work");
-    expect(result).toContain("Wrap up the current session.");
-  });
-
-  it("strips trellis- prefix before looking up description", () => {
-    const content = "# Continue Current Task\n\nBody text.";
-    const result = wrapWithOmpFrontmatter("trellis-continue", content);
-    expect(result).toMatch(/^---\ndescription: /);
-    expect(result).toContain("Body text.");
-  });
-
-  it("throws on unknown command name", () => {
-    expect(() => wrapWithOmpFrontmatter("nonexistent", "body")).toThrow(
-      /Missing command description/,
-    );
-  });
-
-  it("preserves body content after H1 removal", () => {
-    const content = "# Title\n\nLine 1\n\nLine 2\n\n## Section\n\nMore text.";
-    const result = wrapWithOmpFrontmatter("continue", content);
-    expect(result).toContain("Line 1\n\nLine 2\n\n## Section\n\nMore text.");
   });
 });

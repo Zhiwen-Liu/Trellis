@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { collectKerminalTemplates } from "../../src/configurators/kerminal.js";
-import { collectPiTemplates } from "../../src/configurators/pi.js";
 
 describe("kerminal collectKerminalTemplates", () => {
   it("writes entry skills under .kerminal/skills/ (kerminal-native project root)", () => {
@@ -32,25 +31,14 @@ describe("kerminal collectKerminalTemplates", () => {
     expect(files.has(".agents/skills/trellis-check/SKILL.md")).toBe(true);
     expect(files.has(".agents/skills/trellis-before-dev/SKILL.md")).toBe(true);
     expect(files.has(".agents/skills/trellis-meta/SKILL.md")).toBe(true);
-    // Command-as-skill files stay kerminal-private (Codex owns the shared
-    // trellis-start/continue/finish-work fallback copies).
+    // Command-as-skill files stay kerminal-private: the shared root only
+    // carries the auto-triggered workflow + bundled skills.
     expect(files.has(".agents/skills/trellis-start/SKILL.md")).toBe(false);
     expect(files.has(".agents/skills/trellis-finish-work/SKILL.md")).toBe(
       false,
     );
   });
 
-  it("renders .agents/skills/ files byte-identically to Pi's shared writes", () => {
-    const kerminalFiles = collectKerminalTemplates();
-    const piFiles = collectPiTemplates();
-    for (const [key, content] of kerminalFiles) {
-      if (!key.startsWith(".agents/skills/")) continue;
-      expect(
-        piFiles.get(key),
-        `${key} must be byte-identical to Pi's shared-skill write`,
-      ).toBe(content);
-    }
-  });
 
   it("ships an operator guide and no hooks/settings files", () => {
     const files = collectKerminalTemplates();

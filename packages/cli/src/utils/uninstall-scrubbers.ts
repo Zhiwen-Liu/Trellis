@@ -12,7 +12,55 @@
  * does not matter — we just look for the manifest-relative file path.
  */
 
-import { getConfigTemplate as getCodexConfigTemplate } from "../templates/codex/index.js";
+/**
+ * Frozen copy of the upstream 0.6.x Codex `config.toml` template. The Codex
+ * platform configurators were removed in the Kerminal-only registry collapse,
+ * but `scrubCodexConfigToml` below must still recognize every comment the
+ * 0.6.x template shipped so uninstalling a legacy project scrubs an
+ * unmodified config.toml down to empty. Kept verbatim from
+ * `templates/codex/config.toml` @ 0.6.20.
+ */
+export const LEGACY_CODEX_CONFIG_TEMPLATE = `
+# Project-scoped Codex defaults for Trellis workflows.
+# Codex merges this layer after the user-level config when the project
+# is marked as a trusted project. To trust this project, add it under
+# \`[projects]\` in ~/.codex/config.toml, e.g.:
+#
+#   [projects."/abs/path/to/this/repo"]
+#   trust_level = "trusted"
+
+# Keep AGENTS.md as the primary project instruction file.
+project_doc_fallback_filenames = ["AGENTS.md"]
+
+# Codex hooks (\`hooks.json\` in this directory) only fire when the user
+# has enabled them in their USER-level config: \`[features].hooks = true\`
+# in ~/.codex/config.toml (Codex 0.129+; legacy name: \`codex_hooks = true\`,
+# still works but emits a deprecation warning on 0.129+). Project-level
+# config.toml cannot set feature flags; they must be user-level.
+# Codex 0.129+ additionally gates each installed hook behind a one-time
+# \`/hooks\` TUI review; until the user approves it, the hook stays inactive.
+
+# NOTE: Trellis intentionally does NOT write a [features.multi_agent_v2]
+# block here. Codex CLI changed \`features\` deserialization between 0.130
+# and 0.131: the structured table form (with max_concurrent_threads_per_session
+# / *_wait_timeout_ms) is only accepted by 0.131+. On 0.130 and earlier —
+# including the codex CLI bundled inside the Codex desktop app — it fails
+# with \`data did not match any variant of untagged enum FeatureToml\`, which
+# aborts the entire config load and blocks Codex from starting. Codex's own
+# default for multi_agent_v2 is used instead; tune it in your user-level
+# config if needed.
+
+# Pin the subagent recursion depth explicitly instead of relying on Codex's
+# default. #445 removed the per-agent \`[features] multi_agent = false\` guard
+# (the #240/#241 wait_agent-deadlock structural fix) because native subagent
+# dispatch already caps recursion via \`agents.max_depth\` — but that key is
+# global/user-level, not settable inside an individual agent's .toml. Pinning
+# it here means an upstream default change, or a user's own global override,
+# can't silently reopen the recursion the #240/#241 fix closed. Project config
+# (this file) takes precedence over user-level \`~/.codex/config.toml\`.
+[agents]
+max_depth = 1
+`;
 
 export interface ScrubResult {
   content: string;
@@ -358,8 +406,9 @@ export function scrubCodexConfigToml(content: string): ScrubResult {
     "be injected into Codex sessions.",
   ];
 
-  const currentTemplateCommentMarkers = getCodexConfigTemplate()
-    .content.split(/\r?\n/)
+  const currentTemplateCommentMarkers = LEGACY_CODEX_CONFIG_TEMPLATE.split(
+    /\r?\n/,
+  )
     .map((line) => line.trim())
     .filter((line) => line.startsWith("#"))
     .map((line) => line.replace(/^#+\s?/, "").trim())

@@ -800,7 +800,7 @@ async function handleReinit(
       console.log(chalk.gray(`Already initialized with: ${configuredNames}`));
       console.log(
         chalk.gray(
-          "Use platform flags (e.g., --codex) or -u <name> to add platforms/developer.",
+          "Use --kerminal or -u <name> to add the platform/developer.",
         ),
       );
       return true;
@@ -862,16 +862,6 @@ async function handleReinit(
       }
     }
 
-    // Opt-in Claude Code statusLine: only for platforms actually being added
-    // (already-configured ones are skipped in the loop below)
-    await maybePromptStatuslineOptIn(
-      options,
-      platformsToAdd.filter((tool) => {
-        const pid = resolveCliFlag(tool as CliFlag);
-        return !!pid && !configuredPlatforms.has(pid);
-      }),
-    );
-
     const reinitWritten = startRecordingWrites(cwd);
     try {
       for (const tool of platformsToAdd) {
@@ -888,16 +878,8 @@ async function handleReinit(
               chalk.blue(`📝 Configuring ${AI_TOOLS[platformId].name}...`),
             );
             await configurePlatform(platformId, cwd, {
-              withStatusline: options.withStatusline,
               nonInteractive: options.yes === true,
             });
-            if (platformId === "claude-code" && options.withStatusline) {
-              console.log(
-                chalk.gray(
-                  "   ↳ Trellis statusLine installed (--with-statusline)",
-                ),
-              );
-            }
           }
         }
       }
@@ -976,58 +958,8 @@ async function handleReinit(
   return true;
 }
 
-/**
- * Interactive opt-in for the Claude Code statusLine when `--with-statusline`
- * was not passed. Fires only when Claude Code is among the platforms about to
- * be configured and never in -y mode. Mutates `options.withStatusline` so the
- * configurePlatform call sites and the install hint read the same answer; the
- * `!== undefined` gate doubles as the asked-once-per-run guard.
- */
-async function maybePromptStatuslineOptIn(
-  options: InitOptions,
-  toolKeys: string[],
-): Promise<void> {
-  if (options.yes || options.withStatusline !== undefined) return;
-  if (!toolKeys.includes(AI_TOOLS["claude-code"].cliFlag)) return;
-
-  const answer = await inquirer.prompt<{ withStatusline: boolean }>([
-    {
-      type: "confirm",
-      name: "withStatusline",
-      message:
-        "Install Trellis statusLine for Claude Code? (status bar: model, context, branch, rate limits)",
-      default: false,
-    },
-  ]);
-  options.withStatusline = answer.withStatusline;
-}
-
 interface InitOptions {
-  cursor?: boolean;
-  claude?: boolean;
-  opencode?: boolean;
-  codex?: boolean;
-  kilo?: boolean;
-  kiro?: boolean;
-  gemini?: boolean;
-  antigravity?: boolean;
-  devin?: boolean;
-  /** Deprecated alias for `devin` — Windsurf was renamed to Devin. */
-  windsurf?: boolean;
-  qoder?: boolean;
-  codebuddy?: boolean;
-  copilot?: boolean;
-  droid?: boolean;
-  dsh?: boolean;
   kerminal?: boolean;
-  pi?: boolean;
-  reasonix?: boolean;
-  zcode?: boolean;
-  trae?: boolean;
-  omp?: boolean;
-  grok?: boolean;
-  kimi?: boolean;
-  snow?: boolean;
   yes?: boolean;
   user?: string;
   force?: boolean;
@@ -1037,8 +969,6 @@ interface InitOptions {
   append?: boolean;
   registry?: string;
   monorepo?: boolean;
-  /** Claude Code only: install the opt-in Trellis statusLine (--with-statusline) */
-  withStatusline?: boolean;
   workflow?: string;
   workflowSource?: string;
 }
@@ -1111,14 +1041,6 @@ export async function init(options: InitOptions): Promise<void> {
     process.exit(1);
   }
 
-  // Deprecated alias: --windsurf → --devin (Windsurf was renamed to Devin).
-  // Normalize here too so programmatic callers (not just the CLI action) map
-  // correctly. The CLI action prints the deprecation notice.
-  if (options.windsurf) {
-    options.devin = true;
-    delete options.windsurf;
-  }
-
   const cwd = process.cwd();
   const isFirstInit = !fs.existsSync(path.join(cwd, DIR_NAMES.WORKFLOW));
   // Captured here (before createWorkflowStructure + init_developer run) so
@@ -1132,9 +1054,7 @@ export async function init(options: InitOptions): Promise<void> {
   const banner = figlet.textSync("Trellis", { font: "Rebel" });
   console.log(chalk.cyan(`\n${banner.trimEnd()}`));
   console.log(
-    chalk.gray(
-      "\n   All-in-one AI framework & toolkit for Claude Code & Cursor\n",
-    ),
+    chalk.gray("\n   All-in-one AI framework & toolkit for Kerminal\n"),
   );
 
   // Set up proxy before any network calls
@@ -1445,7 +1365,7 @@ export async function init(options: InitOptions): Promise<void> {
     // Explicit flags take precedence (works with or without -y)
     tools = explicitTools;
   } else if (options.yes) {
-    // No explicit tools + -y: default to Cursor and Claude
+    // No explicit tools + -y: default to the registry default (Kerminal)
     tools = TOOLS.filter((t) => t.defaultChecked).map((t) => t.key);
   } else {
     // Interactive mode
@@ -1474,9 +1394,6 @@ export async function init(options: InitOptions): Promise<void> {
     );
     return;
   }
-
-  // Opt-in Claude Code statusLine: confirm interactively when the flag wasn't passed
-  await maybePromptStatuslineOptIn(options, tools);
 
   // ==========================================================================
   // Template Selection (single-repo only; monorepo handles templates above)
@@ -1515,8 +1432,10 @@ export async function init(options: InitOptions): Promise<void> {
       }
       fetchedTemplates = probeResult.templates;
     }
-  } else if (!options.yes) {
-    // Interactive mode: show template selection
+  } else if (!options.yes && process.stdin.isTTY) {
+    // Interactive mode: show template selection. Without a TTY (piped
+    // stdin, CI scripts) there is no one to answer, so fall through to the
+    // blank templates exactly as -y does instead of crashing in inquirer.
     const timeoutSec = TIMEOUTS.INDEX_FETCH_MS / 1000;
     const sourceLabel = registry ? registry.gigetSource : TEMPLATE_INDEX_URL;
     console.log(
@@ -1942,14 +1861,8 @@ export async function init(options: InitOptions): Promise<void> {
           chalk.blue(`📝 Configuring ${AI_TOOLS[platformId].name}...`),
         );
         await configurePlatform(platformId, cwd, {
-          withStatusline: options.withStatusline,
           nonInteractive: options.yes === true,
         });
-        if (platformId === "claude-code" && options.withStatusline) {
-          console.log(
-            chalk.gray("   ↳ Trellis statusLine installed (--with-statusline)"),
-          );
-        }
       }
     }
 

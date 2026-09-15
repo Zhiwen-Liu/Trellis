@@ -7,8 +7,6 @@ import { replacePythonCommandLiterals } from "../configurators/shared.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-type TemplateCategory = "scripts" | "markdown" | "commands";
-
 /**
  * Get the path to the trellis templates directory (.trellis/ scaffolding).
  */
@@ -28,50 +26,6 @@ export function getTrellisSourcePath(): string {
 }
 
 /**
- * Get the path to the claude templates directory (hooks, agents, settings).
- */
-export function getClaudeTemplatePath(): string {
-  const templatePath = path.join(__dirname, "claude");
-  if (fs.existsSync(templatePath)) {
-    return templatePath;
-  }
-  throw new Error(
-    "Could not find claude templates directory. Expected at templates/claude/",
-  );
-}
-
-/**
- * Get the path to the opencode templates directory (agents, plugins, lib).
- */
-export function getOpenCodeTemplatePath(): string {
-  const templatePath = path.join(__dirname, "opencode");
-  if (fs.existsSync(templatePath)) {
-    return templatePath;
-  }
-  throw new Error(
-    "Could not find opencode templates directory. Expected at templates/opencode/",
-  );
-}
-
-/**
- * Get the path to the Pi Agent templates directory (agents, extension, settings).
- */
-export function getPiTemplatePath(): string {
-  const templatePath = path.join(__dirname, "pi");
-  if (fs.existsSync(templatePath)) {
-    return templatePath;
-  }
-  throw new Error(
-    "Could not find pi templates directory. Expected at templates/pi/",
-  );
-}
-
-/** @deprecated Use getPiTemplatePath() instead. */
-export function getPiSourcePath(): string {
-  return getPiTemplatePath();
-}
-
-/**
  * Read a file from the trellis template directory.
  */
 export function readTrellisFile(relativePath: string): string {
@@ -80,27 +34,12 @@ export function readTrellisFile(relativePath: string): string {
   return fs.readFileSync(filePath, "utf-8");
 }
 
-/**
- * Read template content from a category directory.
- */
-export function readTemplate(
-  category: TemplateCategory,
-  filename: string,
-): string {
-  const templatePath = path.join(__dirname, category, filename);
-  return fs.readFileSync(templatePath, "utf-8");
-}
-
 export function readScript(relativePath: string): string {
   return readTrellisFile(`scripts/${relativePath}`);
 }
 
 export function readMarkdown(relativePath: string): string {
   return readTrellisFile(relativePath);
-}
-
-export function readCommand(filename: string): string {
-  return readTemplate("commands", filename);
 }
 
 /**

@@ -190,27 +190,9 @@ describe("trellis template constants", () => {
     const kerminalBlock = platformBlock(implement, "[Kerminal]");
 
     const workflowLabelByPlatform: Partial<Record<AITool, string>> = {
-      gemini: "Gemini",
-      qoder: "Qoder",
-      copilot: "Copilot",
-      trae: "Trae",
-      grok: "Grok",
-      kimi: "Kimi Code",
       kerminal: "Kerminal",
     };
-    // Pi templates keep a pull-based fallback, but workflow 2.1 routes Pi
-    // through the extension-backed context path.
-    const extensionBackedPreludeFallbackPlatforms = new Set<AITool>(["pi"]);
-    // Codex retains a child-side prelude as a compatibility fallback, but
-    // its primary workflow route is the native SubagentStart hook block.
-    const nativePushPreludeFallbackPlatforms = new Set<AITool>(["codex"]);
     const generatedPullBasedLabels = PLATFORM_IDS.flatMap((id) => {
-      if (
-        extensionBackedPreludeFallbackPlatforms.has(id) ||
-        nativePushPreludeFallbackPlatforms.has(id)
-      ) {
-        return [];
-      }
       const templates = collectPlatformTemplates(id);
       const hasPullBasedPrelude =
         templates !== undefined &&
@@ -230,7 +212,7 @@ describe("trellis template constants", () => {
       return [label as string];
     });
 
-    const pullBasedLabels = [...generatedPullBasedLabels, "Reasonix"];
+    const pullBasedLabels = [...generatedPullBasedLabels];
     for (const label of pullBasedLabels) {
       const block = label === "Kerminal" ? kerminalBlock : pullBasedBlock;
       expect(block, `${label} must use pull-based 2.1 guidance`).toContain(

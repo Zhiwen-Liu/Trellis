@@ -14,8 +14,9 @@ import {
   scrubPiSettings,
   scrubCodexConfigToml,
   scrubManagedMarkdownBlock,
+  LEGACY_CODEX_CONFIG_TEMPLATE,
 } from "../../src/utils/uninstall-scrubbers.js";
-import { getConfigTemplate as getCodexConfigTemplate } from "../../src/templates/codex/index.js";
+
 
 const CLAUDE_DELETE_PATHS = [
   ".claude/hooks/session-start.py",
@@ -535,14 +536,14 @@ project_doc_fallback_filenames = ["AGENTS.md"]
 
   it("removes the complete current Codex template, including agents.max_depth", () => {
     const { content, fullyEmpty } = scrubCodexConfigToml(
-      getCodexConfigTemplate().content,
+      LEGACY_CODEX_CONFIG_TEMPLATE,
     );
     expect(fullyEmpty).toBe(true);
     expect(content).toBe("");
   });
 
   it("preserves user-owned keys in the agents table while removing Trellis max_depth", () => {
-    const mixed = `${getCodexConfigTemplate().content}user_key = "keep"\n`;
+    const mixed = `${LEGACY_CODEX_CONFIG_TEMPLATE}user_key = "keep"\n`;
     const { content, fullyEmpty } = scrubCodexConfigToml(mixed);
     expect(fullyEmpty).toBe(false);
     expect(content).toContain("[agents]");

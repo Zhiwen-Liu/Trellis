@@ -45,7 +45,7 @@
 | **任务驱动工作流** | PRD、实现上下文、审查上下文与任务状态统一存放于 `.trellis/tasks/`，AI 开发过程保持结构化、可追溯。 |
 | **项目记忆** | `.trellis/workspace/` 中的工作日志（journal）会保留上一次会话的脉络，因此每次新会话都能基于真实上下文开始。 |
 | **团队共享标准** | Spec 随仓库一同版本化，个人总结出的规则与流程可以直接成为整个团队的基础设施。 |
-| **多平台复用** | 同一套 Trellis 结构覆盖 23 个 AI coding 平台，无需为每个工具单独搭建工作流。 |
+| **Kerminal 优先** | 本 fork 仅演进 Kerminal 适配 —— 上游 Trellis 在 0.6.x 及之前支持 23 个 AI coding 平台（见上游仓库）。 |
 
 ## 前置要求
 
@@ -55,19 +55,24 @@
 ## 快速开始
 
 ```bash
-# 1. 从源码构建 CLI（本 fork 跟随最新代码；
-#    Kerminal 支持需要 Trellis >= 0.6.18，npm 上尚未发布）
-git clone https://github.com/Zhiwen-Liu/Trellis.git
-cd Trellis
-pnpm install && pnpm build
-cd packages/cli && pnpm link --global   # 提供 `trellis`（别名 `tl`）
-#    全局链接解析到这个克隆目录，请勿删除
+# 1. 从 npm 安装 CLI
+npm install -g @zhiwenliu/trellis@latest
 
 # 2. 在你的仓库中用 Kerminal 初始化
 trellis init --kerminal -u your-name
 
 # 3. 上游平台依然可用
 trellis init --cursor --opencode --codex -u your-name
+```
+
+如需从源码构建（二次开发）：
+
+```bash
+git clone https://github.com/Zhiwen-Liu/Trellis.git
+cd Trellis
+pnpm install && pnpm build
+cd packages/cli && pnpm link --global   # 提供 `trellis`（别名 `tl`）
+#    全局链接解析到这个克隆目录，请勿删除
 ```
 
 查看 [快速开始](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx) 与 [支持平台](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx) 指南以了解详细配置步骤。

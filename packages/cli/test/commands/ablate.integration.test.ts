@@ -79,7 +79,7 @@ describe("ablate()/restore() integration", () => {
 
   async function initialize(): Promise<void> {
     fs.writeFileSync(path.join(projectDir, "application.txt"), "unchanged\n");
-    await init({ yes: true, codex: true, claude: true, force: true });
+    await init({ yes: true, kerminal: true, force: true });
   }
 
   function projectFingerprint(): PathFingerprint {
@@ -96,7 +96,7 @@ describe("ablate()/restore() integration", () => {
     );
     fs.mkdirSync(path.dirname(sensitiveTask), { recursive: true });
     fs.writeFileSync(sensitiveTask, "user-authored recovery text\n");
-    const userNeighbor = path.join(projectDir, ".codex", "user-note.txt");
+    const userNeighbor = path.join(projectDir, ".kerminal", "user-note.txt");
     fs.writeFileSync(userNeighbor, "mine\n");
     fs.appendFileSync(path.join(projectDir, "AGENTS.md"), "\nUser footer\n");
     const before = projectFingerprint();
@@ -161,7 +161,7 @@ describe("ablate()/restore() integration", () => {
     await initialize();
     const before = projectFingerprint();
     await ablate({ yes: true });
-    const conflictPath = path.join(projectDir, ".codex", "hooks.json");
+    const conflictPath = path.join(projectDir, ".kerminal", "KERMINAL.md");
     fs.mkdirSync(path.dirname(conflictPath), { recursive: true });
     fs.writeFileSync(conflictPath, '{"user":true}\n');
     const conflicted = projectFingerprint();
@@ -173,6 +173,9 @@ describe("ablate()/restore() integration", () => {
     expect(fs.existsSync(path.join(projectDir, ".trellis"))).toBe(false);
 
     fs.rmSync(conflictPath);
+    // Remove the now-empty directory too — directory entries are part of the
+    // transaction and an empty .kerminal/ still counts as drift.
+    fs.rmdirSync(path.dirname(conflictPath));
     await restore({ yes: true });
     expect(projectFingerprint()).toEqual(before);
   });
@@ -206,8 +209,8 @@ describe("ablate()/restore() integration", () => {
   it.skipIf(process.platform === "win32")(
     "#7 refuses parent-symlink traversal without touching the target",
     async () => {
-      await init({ yes: true, codex: true, force: true });
-      const originalCodex = path.join(projectDir, ".codex");
+      await init({ yes: true, kerminal: true, force: true });
+      const originalCodex = path.join(projectDir, ".kerminal");
       const externalCodex = fs.mkdtempSync(
         path.join(os.tmpdir(), "trellis-ablate-external-"),
       );
@@ -264,12 +267,12 @@ describe("ablate()/restore() integration", () => {
   it.skipIf(process.platform === "win32")(
     "#10 apply failure rolls back exactly and removes the unused transaction",
     async () => {
-      await init({ yes: true, codex: true, force: true });
+      await init({ yes: true, kerminal: true, force: true });
       const blockedRelative = Object.keys(loadHashes(projectDir)).find(
-        (entry) => entry.startsWith(".codex/hooks/"),
+        (entry) => entry.startsWith(".kerminal/skills/"),
       );
       if (!blockedRelative) {
-        throw new Error("Test fixture requires a managed Codex hook file");
+        throw new Error("Test fixture requires a managed Kerminal skill file");
       }
       const blockedParent = path.dirname(
         path.join(projectDir, ...blockedRelative.split("/")),
@@ -321,7 +324,12 @@ describe("ablate()/restore() integration", () => {
 
   it("#13 strict planner failures include recovery guidance", async () => {
     await initialize();
-    fs.writeFileSync(path.join(projectDir, ".codex", "hooks.json"), "{\n");
+    // A manifest-tracked platform path whose parent is no longer a directory
+    // fails strict path validation — the planner must refuse with recovery
+    // guidance instead of silently skipping the file.
+    const skillsDir = path.join(projectDir, ".kerminal", "skills");
+    fs.rmSync(skillsDir, { recursive: true });
+    fs.writeFileSync(skillsDir, "oops, not a directory\n");
 
     await expect(ablate({ yes: true })).rejects.toThrow(
       /Restore the managed file.*stale manifest entry/,

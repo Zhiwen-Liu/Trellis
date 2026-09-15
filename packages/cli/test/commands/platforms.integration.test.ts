@@ -54,11 +54,9 @@ describe("trellis platforms (#396)", () => {
   });
 
   it("--json reports configured platforms with id, displayName, configDir", () => {
-    fs.mkdirSync(path.join(tmpDir, ".claude"), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, ".cursor"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, ".kerminal"), { recursive: true });
     writeTrackedPlatforms(tmpDir, [
-      ".claude/commands/trellis/continue.md",
-      ".cursor/commands/trellis-continue.md",
+      ".kerminal/skills/trellis-continue/SKILL.md",
     ]);
 
     const result = runCli(tmpDir, ["platforms", "--json"]);
@@ -68,13 +66,13 @@ describe("trellis platforms (#396)", () => {
       platforms: { id: string; displayName: string; configDir: string }[];
     };
     const ids = parsed.platforms.map((p) => p.id).sort();
-    expect(ids).toEqual(["claude-code", "cursor"]);
+    expect(ids).toEqual(["kerminal"]);
 
-    const claude = parsed.platforms.find((p) => p.id === "claude-code");
-    expect(claude).toEqual({
-      id: "claude-code",
-      displayName: "Claude Code",
-      configDir: ".claude",
+    const kerminal = parsed.platforms.find((p) => p.id === "kerminal");
+    expect(kerminal).toEqual({
+      id: "kerminal",
+      displayName: "Kerminal",
+      configDir: ".kerminal",
     });
   });
 
@@ -87,15 +85,15 @@ describe("trellis platforms (#396)", () => {
   });
 
   it("human output lists configured platforms without --json", () => {
-    fs.mkdirSync(path.join(tmpDir, ".claude"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, ".kerminal"), { recursive: true });
     writeTrackedPlatforms(tmpDir, [
-      ".claude/commands/trellis/continue.md",
+      ".kerminal/skills/trellis-continue/SKILL.md",
     ]);
 
     const result = runCli(tmpDir, ["platforms"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Claude Code");
-    expect(result.stdout).toContain(".claude");
+    expect(result.stdout).toContain("Kerminal");
+    expect(result.stdout).toContain(".kerminal");
   });
 });
