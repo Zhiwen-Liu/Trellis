@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Bump @zhiwenliu/trellis and @zhiwenliu/trellis-core to the same next
- * version. Replaces the per-package `pnpm version --no-git-tag-version`
- * calls in the release scripts so the two packages can never drift.
+ * Bump the single trellis-kerminal package to the next version.
+ *
+ * The repo ships exactly one npm package (`packages/cli`, published as
+ * `trellis-kerminal`), so there is nothing to keep in lockstep — this
+ * replaces the old dual-package synchronized bump.
  *
  * Usage:
  *   node scripts/bump-versions.js <type>
@@ -12,10 +14,8 @@
  *   beta | rc                  -- prerelease bump using the given preid
  *   promote                    -- strip prerelease suffix (X.Y.Z-rc.N -> X.Y.Z)
  *
- * Reads current version from packages/cli/package.json; refuses to run if
- * core and cli already disagree (call `release-preflight check-versions`
- * separately to diagnose). Writes the new version into both package.json
- * files atomically (read -> compute -> write both).
+ * Reads current version from packages/cli/package.json and writes the new
+ * version back atomically (read -> compute -> write).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -23,7 +23,6 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../..");
-const CORE_PKG = path.join(REPO_ROOT, "packages/core/package.json");
 const CLI_PKG = path.join(REPO_ROOT, "packages/cli/package.json");
 
 const RED = "\x1b[31m";
@@ -105,24 +104,13 @@ function main() {
   const [type] = process.argv.slice(2);
   if (!type) fail(`usage: bump-versions.js <patch|minor|major|beta|rc|promote>`);
 
-  const core = readJSON(CORE_PKG);
   const cli = readJSON(CLI_PKG);
-  if (core.version !== cli.version) {
-    fail(
-      `Pre-bump version mismatch: core=${core.version} cli=${cli.version}.\n` +
-        `Reconcile them manually (edit both package.json files to the same value)\n` +
-        `before running release scripts again.`,
-    );
-  }
-
   const next = computeNext(cli.version, type);
-  core.version = next;
   cli.version = next;
-  writeJSON(CORE_PKG, core);
   writeJSON(CLI_PKG, cli);
   // Human message to stderr so stdout stays a clean machine-readable value.
   process.stderr.write(
-    `${GREEN}ok${RESET} bumped @zhiwenliu/trellis and @zhiwenliu/trellis-core (${type}) -> ${next}\n`,
+    `${GREEN}ok${RESET} bumped ${cli.name} (${type}) -> ${next}\n`,
   );
   process.stdout.write(next + "\n");
 }

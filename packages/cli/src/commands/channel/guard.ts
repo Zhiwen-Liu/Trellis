@@ -21,7 +21,7 @@ import {
   reduceWorkerRegistry,
   type ChannelEvent,
   type WorkerState,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../core/channel/index.js";
 
 import { DIR_NAMES } from "../../constants/paths.js";
 

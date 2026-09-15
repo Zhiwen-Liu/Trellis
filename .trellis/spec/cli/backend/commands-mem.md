@@ -3,7 +3,7 @@
 How Trellis indexes, searches, and extracts dialogue from on-disk session files
 written by Claude Code, Codex, Devin CLI, OpenCode, Pi Agent, and ZCode.
 
-The retrieval engine lives in `@zhiwenliu/trellis-core/mem` (`packages/core/src/mem/`);
+The retrieval engine lives in the core mem module (`packages/cli/src/core/mem/`);
 `packages/cli/src/commands/mem.ts` is a thin CLI wrapper over it. See "Package
 boundary" below before "Subcommand surface".
 
@@ -45,11 +45,10 @@ invoked from the `tl` Commander wire.
 
 ## Package boundary
 
-`mem` is split between `@zhiwenliu/trellis-core` and the CLI. See
+`mem` is split between the core module and the CLI. See
 `trellis-core-sdk.md` for the general rule; the `mem`-specific split:
 
-**Core owns** (`packages/core/src/mem/`, public surface at the
-`@zhiwenliu/trellis-core/mem` subpath — **not** the root barrel):
+**Core owns** (`packages/cli/src/core/mem/`, public surface at `mem/index.ts` — **not** the `src/core/` root barrel):
 
 - persisted-session readers / adapters for Claude Code, Codex, Devin CLI, OpenCode, Pi,
   and ZCode (`adapters/{claude,codex,devin,opencode,pi,zcode}.ts`)
@@ -60,7 +59,7 @@ invoked from the `tl` Commander wire.
 - the orchestration API: `listMemSessions`, `searchMemSessions`,
   `readMemContext`, `extractMemDialogue`, `listMemProjects`, plus their
   input/output types and `MemSessionNotFoundError`
-- low-level JSONL / path helpers under `packages/core/src/mem/internal/`
+- low-level JSONL / path helpers under `packages/cli/src/core/mem/internal/`
   (private — the CLI must not deep-import them)
 
 **CLI owns** (`packages/cli/src/commands/mem.ts`):
@@ -74,7 +73,7 @@ invoked from the `tl` Commander wire.
 The CLI imports core through the public subpath only:
 
 ```ts
-import { searchMemSessions } from "@zhiwenliu/trellis-core/mem";
+import { searchMemSessions } from "../core/mem/index.js";
 ```
 
 Core search/context/extract results carry a `warnings` array. List/projects
@@ -87,7 +86,7 @@ or exits.
 ## Subcommand surface
 
 Entry point: `commands/mem.ts:runMem` dispatches on `argv.cmd` after
-`commands/mem.ts:parseArgv`, then calls the matching core `@zhiwenliu/trellis-core/mem`
+`commands/mem.ts:parseArgv`, then calls the matching core mem module
 API and renders the result. The cross-cutting `--platform / --since / --until /
 --cwd / --global / --limit` flags are parsed by the CLI and translated into a
 core `MemFilter`.
@@ -129,7 +128,7 @@ Subcommand-specific:
 
 ## Platform indexing
 
-Each platform adapter lives in `packages/core/src/mem/adapters/` and exports
+Each platform adapter lives in `packages/cli/src/core/mem/adapters/` and exports
 three functions:
 
 | Platform | `*ListSessions(f)`                                   | `*ExtractDialogue(s)`     | `*Search(s, kw)`                                  |
@@ -954,7 +953,7 @@ Module-load constants in `core/mem/internal/paths.ts` (`CLAUDE_PROJECTS`,
 `CODEX_SESSIONS`, …) capture `os.homedir()` once. Core tests must mock
 `node:os` via `vi.hoisted` and `vi.mock("node:os", ...)` _before_
 `await import("../../src/mem/adapters/...")`. See
-`packages/core/test/mem/adapters.test.ts` for the canonical pattern.
+`packages/cli/test/core/mem/adapters.test.ts` for the canonical pattern.
 
 ### Adding a new platform without updating all dispatchers
 
@@ -977,7 +976,7 @@ discriminated union, which they do; trust the compiler here.
 
 ## Runtime validation (no zod)
 
-`core/mem/` does **not** use `zod` — `@zhiwenliu/trellis-core` keeps a
+`core/mem/` does **not** use `zod` — the core module keeps a
 zero-dependency surface (see `trellis-core-sdk.md`). External platform shapes
 are modeled as loose TypeScript `interface`s with every field optional, and
 the adapters guard fields at the point of use with plain `typeof` / `Array.isArray`
@@ -1044,7 +1043,7 @@ somewhere is parsing it and version the change.
 Tests follow the package boundary: pure retrieval logic is tested in core,
 CLI-wrapper behavior is tested in the CLI.
 
-Core tests (`packages/core/test/mem/`):
+Core tests (`packages/cli/test/core/mem/`):
 
 | File                | What it covers                                                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1063,7 +1062,7 @@ CLI tests (`packages/cli/test/commands/`):
 
 ### Fixture pattern (core adapter tests)
 
-Mandatory for any new platform-parser test in `packages/core/test/mem/`:
+Mandatory for any new platform-parser test in `packages/cli/test/core/mem/`:
 
 1. **`vi.hoisted` block** mints a tmpdir for `fakeHome`. This runs _before_
    module resolution so `core/mem/internal/paths.ts`'s `os.homedir()`-derived
@@ -1113,13 +1112,13 @@ When adding a feature to `mem`:
   constants would lock onto the real `~/.claude` etc. and your test would
   either pass by accident or pollute the developer's actual session store.
 - Don't move pure retrieval assertions into the CLI suite. If a CLI test would
-  only exercise core logic, write it in `packages/core/test/mem/` instead.
+  only exercise core logic, write it in `packages/cli/test/core/mem/` instead.
 
 ---
 
 ## Public API surface
 
-### Core — `@zhiwenliu/trellis-core/mem`
+### Core — `src/core/mem/`
 
 The reusable retrieval API, importable by the CLI, daemons, and future SDK
 consumers. Exposed only on the `/mem` subpath — **not** the root barrel.
@@ -1132,7 +1131,7 @@ consumers. Exposed only on the `/mem` subpath — **not** the root barrel.
 
 Internal core modules (`filter.ts`, `search.ts`, `dialogue.ts`, `context.ts`,
 `phase.ts`, the adapters, and everything under `internal/`) are exercised
-directly by `packages/core/test/mem/**` but are **not** part of the published
+directly by `packages/cli/test/core/mem/**` but are **not** part of the published
 subpath surface — the CLI must not deep-import them.
 
 ### CLI — `packages/cli/src/commands/mem.ts`
@@ -1150,10 +1149,10 @@ stderr, emits the OpenCode-unavailable notice, and owns exit codes.
 
 ## Reference
 
-- `packages/core/src/mem/` — retrieval engine (adapters, search, context, phase, projects)
-- `packages/core/src/mem/index.ts` — `@zhiwenliu/trellis-core/mem` public surface
+- `packages/cli/src/core/mem/` — retrieval engine (adapters, search, context, phase, projects)
+- `packages/cli/src/core/mem/index.ts` — mem public surface
 - `packages/cli/src/commands/mem.ts` — CLI wrapper (`runMem`, argv parsing, rendering)
-- `packages/core/test/mem/` — core retrieval tests (helpers, adapters, phase, cross-day, api)
+- `packages/cli/test/core/mem/` — core retrieval tests (helpers, adapters, phase, cross-day, api)
 - `packages/cli/test/commands/mem-helpers.test.ts` — CLI argv / formatting tests
 - `packages/cli/test/commands/mem-integration.test.ts` — end-to-end `runMem`
 - `.trellis/tasks/05-14-mem-core-channel-reuse/` — the mem-core extraction task

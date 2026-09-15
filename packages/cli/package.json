@@ -1,7 +1,7 @@
 {
-  "name": "@zhiwenliu/trellis",
+  "name": "trellis-kerminal",
   "version": "0.7.0",
-  "description": "AI capabilities grow like ivy — Trellis provides the structure to guide them along a disciplined path",
+  "description": "TrellisKerminal — the Kerminal-only distribution of Trellis, an out-of-the-box engineering framework for AI coding (specs, tasks, and memory persisted in your repo)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -40,9 +40,7 @@
   "keywords": [
     "ai",
     "workflow",
-    "cursor",
-    "claude",
-    "iflow",
+    "kerminal",
     "cli",
     "developer-tools",
     "agent",
@@ -52,7 +50,6 @@
   "author": "Mindfold LLC",
   "license": "AGPL-3.0-only",
   "dependencies": {
-    "@zhiwenliu/trellis-core": "workspace:*",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "figlet": "^1.9.4",
@@ -80,11 +77,15 @@
   "files": [
     "dist",
     "bin",
+    "templates",
+    "scripts",
     "README.md",
     "LICENSE"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mindfold-ai/trellis.git"
-  }
+    "url": "https://github.com/Zhiwen-Liu/TrellisKerminal.git"
+  },
+  "homepage": "https://github.com/Zhiwen-Liu/TrellisKerminal",
+  "bugs": "https://github.com/Zhiwen-Liu/TrellisKerminal/issues"
 }

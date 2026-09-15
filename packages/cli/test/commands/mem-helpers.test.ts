@@ -2,7 +2,7 @@
  * Tier-1 unit tests for the `trellis mem` CLI-layer helpers.
  *
  * The reusable retrieval / search / cleaning primitives moved to
- * `@zhiwenliu/trellis-core/mem` and are covered by `packages/core/test/mem/*`.
+ * the core mem module (`src/core/mem/`) and are covered by `test/core/mem/*`.
  * What remains here is CLI-only: argv parsing, flag → core-filter translation,
  * and terminal formatting.
  */

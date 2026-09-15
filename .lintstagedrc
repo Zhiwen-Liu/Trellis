@@ -1,3 +1,3 @@
 {
-  "packages/cli/src/**/*.ts": ["pnpm --filter @zhiwenliu/trellis exec eslint --fix", "pnpm --filter @zhiwenliu/trellis exec prettier --write"]
+  "packages/cli/src/**/*.ts": ["pnpm -C packages/cli exec eslint --fix", "pnpm -C packages/cli exec prettier --write"]
 }

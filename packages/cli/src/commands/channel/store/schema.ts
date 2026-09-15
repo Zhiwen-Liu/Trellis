@@ -1,7 +1,7 @@
 /**
  * Channel schema re-exports.
  *
- * Canonical source: `@zhiwenliu/trellis-core/channel`. This module is
+ * Canonical source: `src/core/channel/`. This module is
  * kept as a thin pass-through during the supervisor/wait migration so
  * CLI runtime code (supervisor, spawn, kill, wait) can continue to
  * import from a stable local path while command files migrate to the
@@ -19,7 +19,7 @@ export {
   asStringArray,
   asContextEntries,
   buildContextEntries,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../../core/channel/index.js";
 
 export type {
   ChannelScope,
@@ -31,10 +31,10 @@ export type {
   RawContextEntry,
   ThreadAction,
   EventOrigin,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../../core/channel/index.js";
 
-import { buildContextEntries } from "@zhiwenliu/trellis-core/channel";
-import type { ContextEntry } from "@zhiwenliu/trellis-core/channel";
+import { buildContextEntries } from "../../../core/channel/index.js";
+import type { ContextEntry } from "../../../core/channel/index.js";
 
 /**
  * CSV parser kept colocated with the schema for CLI command files that

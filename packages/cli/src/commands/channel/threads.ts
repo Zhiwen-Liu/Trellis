@@ -8,7 +8,7 @@ import {
   type ChannelScope,
   type ContextChannelEvent,
   type ThreadChannelEvent,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../core/channel/index.js";
 
 import {
   parseChannelScope,

@@ -2,7 +2,7 @@ import {
   clearChannelTitle,
   setChannelTitle,
   type ChannelScope,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../core/channel/index.js";
 
 import { parseChannelScope } from "./store/schema.js";
 

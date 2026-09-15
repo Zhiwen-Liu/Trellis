@@ -9,7 +9,7 @@
  * bucket of migrations.
  *
  * This guard runs before `pnpm version` bumps on every release track:
- *   1. Query npm for all published versions of @zhiwenliu/trellis
+ *   1. Query npm for all published versions of trellis-kerminal
  *   2. Diff against local `src/migrations/manifests/*.json`
  *   3. Fail non-zero if any npm version lacks a local manifest
  *
@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MANIFESTS_DIR = path.join(__dirname, "../src/migrations/manifests");
-const PACKAGE_NAME = "@zhiwenliu/trellis";
+const PACKAGE_NAME = "trellis-kerminal";
 
 /**
  * Historical npm versions whose manifests are permanently missing from the
@@ -77,9 +77,9 @@ function fetchNpmVersions() {
     return Array.isArray(parsed) ? parsed : [parsed];
   } catch (err) {
     // First publish ever? Package doesn't exist on npm yet — nothing to sync.
-    // This fork (@zhiwenliu/trellis) starts fresh at 0.6.20 with zero published
-    // history, so until the first publish lands this gate is vacuous: treat
-    // "not found on npm" as a clean skip, not a failure.
+    // The TrellisKerminal fork (trellis-kerminal) starts fresh at 0.7.0 with
+    // zero published history, so until the first publish lands this gate is
+    // vacuous: treat "not found on npm" as a clean skip, not a failure.
     const stderr = err.stderr?.toString() ?? "";
     if (stderr.includes("E404") || stderr.includes("not found")) {
       return [];
@@ -100,12 +100,12 @@ function main() {
   const localVersions = readLocalManifestVersions();
   const npmVersions = fetchNpmVersions();
 
-  // No published history yet: this fork starts fresh at 0.6.20, so there is
+  // No published history yet: this fork starts fresh at 0.7.0, so there is
   // no npm-side contract to stay continuous with until the first publish.
   if (npmVersions.length === 0) {
     console.log(
       `${GREEN}✓${RESET} ${PACKAGE_NAME} has no published versions on npm yet ` +
-      `(fork starts fresh at 0.6.20) — manifest continuity check skipped.`,
+      `(fork starts fresh at 0.7.0) — manifest continuity check skipped.`,
     );
     return;
   }

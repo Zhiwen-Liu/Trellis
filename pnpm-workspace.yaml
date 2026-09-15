@@ -1,2 +1,5 @@
+# Single-package workspace: pnpm 10 requires this file to discover
+# packages/cli as an installable project. The repo publishes exactly one
+# package (trellis-kerminal) from packages/cli.
 packages:
-  - "packages/*"
+  - "packages/cli"

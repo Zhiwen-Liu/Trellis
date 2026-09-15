@@ -13,6 +13,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "stripInternal": true,
+    "isolatedModules": true,
     "resolveJsonModule": true,
   },
   "include": ["src/**/*"],

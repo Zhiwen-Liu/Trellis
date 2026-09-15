@@ -1,40 +1,39 @@
 # Core Backend Guidelines
 
-These guidelines apply to `packages/core`.
+These guidelines apply to the core modules under `packages/cli/src/core/`
+(merged into the single `trellis-kerminal` package at 0.7.0).
 
 ## Purpose
 
-`@zhiwenliu/trellis-core` owns reusable SDK/domain primitives that must stay
+The core modules own reusable SDK/domain primitives that must stay
 independent of CLI rendering and process-control concerns.
 
 ## Source Map
 
 | Area | Path | Purpose |
 | --- | --- | --- |
-| Root exports | `packages/core/src/index.ts` | Package root public API. Keep this small. |
-| Channel API | `packages/core/src/channel/` | Durable channel/event APIs, reducers, workers, inbox, runtime contracts. |
-| Mem API | `packages/core/src/mem/` | Persisted AI session readers, search, filtering, dialogue extraction, and project aggregation. |
-| Task API | `packages/core/src/task/` | Reusable task record, schema, phase, and path helpers. |
-| Testing API | `packages/core/src/testing/` | Public test helpers intended for package consumers. |
-| Tests | `packages/core/test/` | Core-owned unit/integration coverage. |
+| Root exports | `packages/cli/src/core/index.ts` | Core root barrel (channel + task). Keep this small. |
+| Channel API | `packages/cli/src/core/channel/` | Durable channel/event APIs, reducers, workers, inbox, runtime contracts. |
+| Mem API | `packages/cli/src/core/mem/` | Persisted AI session readers, search, filtering, dialogue extraction, and project aggregation. |
+| Task API | `packages/cli/src/core/task/` | Reusable task record, schema, phase, and path helpers. |
+| Testing API | `packages/cli/src/core/testing/` | Public test helpers intended for package consumers. |
+| Tests | `packages/cli/test/core/` | Core-owned unit/integration coverage. |
 
 ## Contracts
 
 - Core APIs must not print terminal output, call `process.exit`, parse CLI argv,
   or depend on Chalk / Commander / Inquirer.
-- CLI code must import core through public exports such as
-  `@zhiwenliu/trellis-core/channel`, not deep paths under `packages/core/src`.
-- Public subpaths must be declared explicitly in `packages/core/package.json`.
-- Core and CLI publish together with the same version.
-- Detailed package-boundary rules currently live in
+- CLI code must import core through the public entry points such as
+  `../core/channel/index.js`, not deep paths under `src/core/*/internal/`.
+- There is one package and one version; core and CLI ship together.
+- Detailed boundary rules currently live in
   `.trellis/spec/cli/backend/trellis-core-sdk.md`; keep this file and that
-  boundary spec consistent until the detailed core rules are split fully under
-  `.trellis/spec/core/`.
+  boundary spec consistent.
 
 ## Pre-Development Checklist
 
 - Read `.trellis/spec/cli/backend/trellis-core-sdk.md` before editing
-  `packages/core/**` or moving logic between CLI and core.
+  `packages/cli/src/core/**` or moving logic between CLI and core.
 - Read `.trellis/spec/cli/unit-test/conventions.md` before adding or changing
   core tests.
 - For channel changes, also read
@@ -43,17 +42,10 @@ independent of CLI rendering and process-control concerns.
 
 ## Quality Check
 
-Run the package-scoped checks that match the change:
+Run the package checks that match the change:
 
 ```bash
-pnpm --filter @zhiwenliu/trellis-core lint
-pnpm --filter @zhiwenliu/trellis-core typecheck
-pnpm --filter @zhiwenliu/trellis-core test
-```
-
-For changes that affect CLI imports or release packaging, also run the root
-typecheck path so CLI declaration resolution is exercised:
-
-```bash
-pnpm typecheck
+pnpm -C packages/cli lint
+pnpm -C packages/cli typecheck
+pnpm -C packages/cli test
 ```

@@ -2,7 +2,7 @@
  * Channel events local module.
  *
  * Canonical types, reducers, and seq-allocating append come from
- * `@zhiwenliu/trellis-core`. Supervisor / spawn / kill still import
+ * `src/core/channel/`. Supervisor / spawn / kill still import
  * `appendEvent` from here so their call sites stay stable; the
  * implementation is core's, including torn-tail seq recovery.
  *
@@ -17,7 +17,7 @@ import {
   reduceChannelMetadata,
   type ChannelEvent,
   type ChannelMetadata,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../../core/channel/index.js";
 
 import { eventsPath } from "./paths.js";
 
@@ -32,7 +32,7 @@ export {
   reduceChannelMetadata,
   appendEvent,
   readLastSeq,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../../core/channel/index.js";
 
 export type {
   ChannelEvent,
@@ -49,7 +49,7 @@ export type {
   ProgressChannelEvent,
   SupervisorWarningChannelEvent,
   AppendablePartial,
-} from "@zhiwenliu/trellis-core/channel";
+} from "../../../core/channel/index.js";
 
 export async function readChannelEvents(
   name: string,

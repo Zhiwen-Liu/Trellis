@@ -6,71 +6,67 @@
 
 ## Overview
 
-This project is a **TypeScript monorepo** using ES modules. It publishes a CLI package (`@zhiwenliu/trellis`) and a reusable core package (`@zhiwenliu/trellis-core`). The source code also follows a **dogfooding architecture** - Trellis uses its own configuration files (`.cursor/`, `.claude/`, `.trellis/`) as templates for new projects.
+This project is a **single-package TypeScript repo** using ES modules. It
+publishes one npm package, `trellis-kerminal` (`packages/cli`), which ships
+both the user-facing CLI and the reusable core domain modules under
+`packages/cli/src/core/`. The source code also follows a **dogfooding
+architecture** - Trellis uses its own configuration files (`.kerminal/`,
+`.agents/`, `.trellis/`) as templates for new projects.
 
 ---
 
 ## Directory Layout
 
 ```
-packages/
-├── core/                # @zhiwenliu/trellis-core: reusable APIs
-│   ├── src/
+packages/cli/            # trellis-kerminal: the only publishable package
+├── src/
+│   ├── cli/             # CLI entry point and argument parsing
+│   │   └── index.ts     # Main CLI entry (Commander.js setup)
+│   ├── core/            # Reusable domain APIs (formerly @zhiwenliu/trellis-core)
 │   │   ├── channel/     # channel/thread storage, reducers, event protocol helpers
 │   │   ├── task/        # reusable task record helpers
 │   │   ├── testing/     # test helpers intended for package consumers
-│   │   └── index.ts     # package public API
-│   └── package.json     # explicit public exports
-└── cli/                 # @zhiwenliu/trellis: user-facing CLI
-    ├── src/
-    │   ├── cli/         # CLI entry point and argument parsing
-    │   │   └── index.ts # Main CLI entry (Commander.js setup)
-    │   ├── commands/    # Command implementations (one file or folder per command)
-    │   │   ├── init.ts
-    │   │   ├── update.ts
-    │   │   ├── uninstall.ts
-    │   │   ├── mem.ts
-    │   │   └── channel/ # Channel command renderers and CLI orchestration
-    │   ├── configurators/
-    │   ├── constants/
-    │   ├── templates/
-    │   ├── types/
-    │   ├── utils/
-    │   └── index.ts     # CLI package public API
-    ├── scripts/         # release, manifest, template copy, and verification scripts
-    └── package.json
+│   │   └── index.ts     # core root barrel (channel + task re-exports)
+│   ├── commands/        # Command implementations (one file or folder per command)
+│   │   ├── init.ts
+│   │   ├── update.ts
+│   │   ├── uninstall.ts
+│   │   ├── mem.ts
+│   │   └── channel/     # Channel command renderers and CLI orchestration
+│   ├── configurators/
+│   ├── constants/
+│   ├── templates/
+│   ├── types/
+│   ├── utils/
+│   └── index.ts         # package public API
+├── scripts/             # release, manifest, template copy, and verification scripts
+└── package.json
 ```
 
-### Dogfooding Directories (Project Root)
+### Project Root Directories
 
-These directories are copied to `dist/` during build and used as templates:
+Kerminal-only install targets (nothing here is dogfooded anymore — see
+"What is Dogfooded" below):
 
 ```
-.cursor/                 # Cursor configuration (dogfooded)
-├── commands/            # Slash commands for Cursor
-│   ├── start.md
-│   ├── finish-work.md
-│   └── ...
+.kerminal/               # Kerminal configuration (installed by trellis init)
+├── skills/              # Entry skills (trellis-start / trellis-continue /
+│                        # trellis-finish-work) + agent prompts
+│                        # (trellis-implement / trellis-check / trellis-research)
+└── KERMINAL.md          # Operator guide
 
-.claude/                 # Claude Code configuration (dogfooded)
-├── commands/            # Slash commands
-├── agents/              # Multi-agent pipeline agents
-├── hooks/               # Context injection hooks
-└── settings.json        # Hook configuration
+.agents/                 # Shared AI-agent skills root (installed by trellis init)
+└── skills/              # Workflow skills (trellis-brainstorm, trellis-check, ...)
 
-.trellis/                # Trellis workflow (partially dogfooded)
-├── scripts/             # Python scripts (dogfooded)
-│   ├── common/          # Shared utilities (paths.py, developer.py, cli_adapter.py, etc.)
-│   ├── hooks/           # Lifecycle hook scripts (project-specific, NOT dogfooded)
-│   └── *.py             # Main scripts (task.py, get_context.py, etc.)
+.trellis/                # Trellis workflow (template sources in src/templates/trellis/)
+├── scripts/             # Python scripts (common/, hooks/, *.py)
 ├── workspace/           # Developer progress tracking
-│   └── index.md         # Index template (dogfooded)
-├── spec/                # Project guidelines (NOT dogfooded)
+│   └── index.md         # Index template
+├── spec/                # Project guidelines (per-package, layer-scoped)
 │   ├── cli/             # CLI package specs (backend/, unit-test/)
-│   ├── docs-site/       # Docs package specs (docs/)
 │   └── guides/          # Thinking guides
-├── workflow.md          # Workflow documentation (dogfooded)
-└── .gitignore           # Git ignore rules (dogfooded)
+├── workflow.md          # Workflow documentation
+└── .gitignore           # Git ignore rules
 ```
 
 ---
@@ -79,16 +75,13 @@ These directories are copied to `dist/` during build and used as templates:
 
 ### What is Dogfooded
 
-Files that are copied directly from Trellis project to user projects:
-
-| Source | Destination | Description |
-|--------|-------------|-------------|
-| `.cursor/` | `.cursor/` | Entire directory copied |
-| `.claude/` | `.claude/` | Entire directory copied |
-| `.trellis/scripts/` | `.trellis/scripts/` | All scripts copied |
-| `.trellis/workflow.md` | `.trellis/workflow.md` | Direct copy |
-| `.trellis/.gitignore` | `.trellis/.gitignore` | Direct copy |
-| `.trellis/workspace/index.md` | `.trellis/workspace/index.md` | Direct copy |
+Since the kerminal-only, single-package refactor, templates ship exclusively
+from `src/templates/` — nothing is copied from the repo root into user
+projects (`.cursor/` and `.claude/` no longer exist here). Kerminal installs
+come from `src/templates/kerminal/` (entry skills, agent prompts,
+`KERMINAL.md`), the shared workflow skills from
+`src/templates/common/bundled-skills/`, and `.trellis/` scripts from
+`src/templates/trellis/scripts/`.
 
 ### What is NOT Dogfooded
 
@@ -102,26 +95,20 @@ Files that use generic templates (in `src/templates/`):
 ### Build Process
 
 ```bash
-# scripts/copy-templates.js copies dogfooding sources to dist/
+# scripts/copy-templates.js copies template sources to dist/
 pnpm build
 
 # Result:
 dist/
-├── .cursor/           # From project root .cursor/
-├── .claude/           # From project root .claude/
-├── .trellis/          # From project root .trellis/ (filtered)
-│   ├── scripts/       # All scripts (no multi_agent/)
-│   ├── workspace/
-│   │   └── index.md   # Only index.md, no developer subdirs
-│   ├── workflow.md
-│   └── .gitignore
-└── templates/         # From src/templates/ (no .ts files)
-    ├── common/        # Shared command + skill templates
-    ├── shared-hooks/  # Platform-independent hook scripts
-    ├── claude/        # Claude-specific templates
-    ├── {platform}/    # Other platform templates
-    └── markdown/
-        └── spec/      # Generic spec templates
+├── templates/         # From src/templates/ (no .ts files)
+│   ├── trellis/       # .trellis/ scripts and config
+│   ├── common/        # Shared command + skill templates
+│   ├── kerminal/      # Kerminal entry skills, agent prompts, operator guide
+│   ├── shared-hooks/  # Platform-independent hook scripts
+│   └── markdown/
+│       └── spec/      # Generic spec templates
+└── migrations/
+    └── manifests/     # Update/migration manifests
 ```
 
 ---
@@ -132,7 +119,7 @@ dist/
 
 | Layer | Directory | Responsibility |
 |-------|-----------|----------------|
-| Core | `packages/core/src/` | Reusable APIs, reducers, storage helpers, typed contracts |
+| Core | `packages/cli/src/core/` | Reusable APIs, reducers, storage helpers, typed contracts |
 | CLI | `packages/cli/src/cli/` | Parse arguments, display help, call commands |
 | Commands | `packages/cli/src/commands/` | Implement CLI commands, orchestrate actions |
 | Configurators | `packages/cli/src/configurators/` | Copy/generate configuration for tools |
@@ -141,7 +128,7 @@ dist/
 | Utils | `packages/cli/src/utils/` | CLI-specific utility functions |
 | Constants | `packages/cli/src/constants/` | CLI constants (paths, names) |
 
-Shared logic belongs in `packages/core/src/` when it is useful outside terminal command rendering. Package boundary rules live in `trellis-core-sdk.md`.
+Shared logic belongs in `packages/cli/src/core/` when it is useful outside terminal command rendering. Module boundary rules live in `trellis-core-sdk.md`.
 
 ### Configurator Pattern
 

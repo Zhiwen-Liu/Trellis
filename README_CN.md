@@ -12,23 +12,22 @@
 </p>
 
 > [!NOTE]
-> 这是 [mindfold-ai/Trellis](https://github.com/mindfold-ai/Trellis) 的 **Kerminal 专用 fork**：基于上游能力，但优先演进 Kerminal 适配。文档以纯 Markdown 形式维护在 [Zhiwen-Liu/trellis-docs](https://github.com/Zhiwen-Liu/trellis-docs)，本 fork 不单独部署文档站。
+> **TrellisKerminal** 是 [mindfold-ai/Trellis](https://github.com/mindfold-ai/Trellis) 的 Kerminal 专用发行版：继承上游理念（把规范、任务、记忆沉淀进仓库），但只发布单个 `trellis-kerminal` npm 包，且仅支持 Kerminal 平台。文档以纯 Markdown 形式维护在本仓库的 [`docs/`](./docs/) 目录中。
 
 <p align="center">
 <a href="./README.md">English</a> •
-<a href="https://github.com/Zhiwen-Liu/trellis-docs">文档</a> •
-<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx">快速开始</a> •
-<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx">支持平台</a> •
-<a href="https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/real-world-scenarios.mdx">使用场景</a>
+<a href="./docs/">文档</a> •
+<a href="./docs/quickstart.md">快速开始</a> •
+<a href="./docs/kerminal.md">Kerminal 参考</a>
 </p>
 
 <p align="center">
-<a href="https://github.com/Zhiwen-Liu/Trellis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
-<a href="https://github.com/Zhiwen-Liu/Trellis/stargazers"><img src="https://img.shields.io/github/stars/Zhiwen-Liu/Trellis?style=flat-square&color=eab308" alt="stars" /></a>
-<a href="https://github.com/Zhiwen-Liu/trellis-docs"><img src="https://img.shields.io/badge/docs-markdown-0f766e?style=flat-square" alt="docs" /></a>
+<a href="https://github.com/Zhiwen-Liu/TrellisKerminal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-16a34a.svg?style=flat-square" alt="license" /></a>
+<a href="https://github.com/Zhiwen-Liu/TrellisKerminal/stargazers"><img src="https://img.shields.io/github/stars/Zhiwen-Liu/TrellisKerminal?style=flat-square&color=eab308" alt="stars" /></a>
+<a href="./docs/"><img src="https://img.shields.io/badge/docs-markdown-0f766e?style=flat-square" alt="docs" /></a>
 <a href="https://discord.com/invite/tWcCZ3aRHc"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
-<a href="https://github.com/Zhiwen-Liu/Trellis/issues"><img src="https://img.shields.io/github/issues/Zhiwen-Liu/Trellis?style=flat-square&color=e67e22" alt="open issues" /></a>
-<a href="https://github.com/Zhiwen-Liu/Trellis/pulls"><img src="https://img.shields.io/github/issues-pr/Zhiwen-Liu/Trellis?style=flat-square&color=9b59b6" alt="open PRs" /></a>
+<a href="https://github.com/Zhiwen-Liu/TrellisKerminal/issues"><img src="https://img.shields.io/github/issues/Zhiwen-Liu/TrellisKerminal?style=flat-square&color=e67e22" alt="open issues" /></a>
+<a href="https://github.com/Zhiwen-Liu/TrellisKerminal/pulls"><img src="https://img.shields.io/github/issues-pr/Zhiwen-Liu/TrellisKerminal?style=flat-square&color=9b59b6" alt="open PRs" /></a>
 <a href="https://deepwiki.com/mindfold-ai/Trellis"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?style=flat-square" alt="Ask DeepWiki" /></a>
 <a href="https://chatgpt.com/?q=Explain+the+project+mindfold-ai/Trellis+on+GitHub"><img src="https://img.shields.io/badge/Ask-ChatGPT-74aa9c?style=flat-square&logo=openai&logoColor=white" alt="Ask ChatGPT" /></a>
 </p>
@@ -56,26 +55,25 @@
 
 ```bash
 # 1. 从 npm 安装 CLI
-npm install -g @zhiwenliu/trellis@latest
+npm install -g trellis-kerminal@latest
 
 # 2. 在你的仓库中用 Kerminal 初始化
 trellis init --kerminal -u your-name
 
-# 3. 上游平台依然可用
-trellis init --cursor --opencode --codex -u your-name
+# 3. 在 Kerminal 中打开项目，用自然语言描述需求
 ```
 
 如需从源码构建（二次开发）：
 
 ```bash
-git clone https://github.com/Zhiwen-Liu/Trellis.git
-cd Trellis
+git clone https://github.com/Zhiwen-Liu/TrellisKerminal.git
+cd TrellisKerminal
 pnpm install && pnpm build
 cd packages/cli && pnpm link --global   # 提供 `trellis`（别名 `tl`）
 #    全局链接解析到这个克隆目录，请勿删除
 ```
 
-查看 [快速开始](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx) 与 [支持平台](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx) 指南以了解详细配置步骤。
+查看 [快速开始](./docs/quickstart.md) 与 [Kerminal 参考](./docs/kerminal.md) 以了解详细配置步骤。
 
 ## 如何使用
 
@@ -99,11 +97,8 @@ Trellis 内部运行一个 4 阶段循环，skill 与子代理均由系统自动
 
 | 需求 | 链接 |
 | --- | --- |
-| 在仓库中安装 Trellis | [快速开始](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/install-and-first-task.mdx) |
-| 了解各平台之间的差异 | [支持平台](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/advanced/multi-platform.mdx) |
-| 查看实际使用场景 | [真实场景](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/start/real-world-scenarios.mdx) |
-| 从 Spec 模板起步 | [Spec 模板](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/templates/specs-index.mdx) |
-| 跟进版本更新 | [更新日志](https://github.com/Zhiwen-Liu/trellis-docs/tree/main/zh/changelog) |
+| 在仓库中安装 Trellis | [快速开始](./docs/quickstart.md) |
+| Kerminal 平台机制 | [Kerminal 参考](./docs/kerminal.md) |
 
 ## 常见问题
 
@@ -165,10 +160,9 @@ Trellis 管理的全部项目级表面。请新开一个 agent 会话进行对�
 
 ## 社区与资源
 
-- [文档（Markdown）](https://github.com/Zhiwen-Liu/trellis-docs)
-- [GitHub Issues](https://github.com/Zhiwen-Liu/Trellis/issues)
+- [文档（Markdown）](./docs/)
+- [GitHub Issues](https://github.com/Zhiwen-Liu/TrellisKerminal/issues)
 - [Discord](https://discord.com/invite/tWcCZ3aRHc)（上游社区）
-- [技术博客](https://github.com/Zhiwen-Liu/trellis-docs/blob/main/zh/blog/index.mdx)
 
 ### 联系我们
 
@@ -179,7 +173,7 @@ Trellis 管理的全部项目级表面。请新开一个 agent 会话进行对�
 </p>
 
 <p align="center">
-<a href="https://github.com/Zhiwen-Liu/Trellis">本 Fork（Kerminal 专用）</a> •
+<a href="https://github.com/Zhiwen-Liu/TrellisKerminal">TrellisKerminal</a> •
 <a href="https://github.com/mindfold-ai/Trellis">上游仓库</a> •
 <a href="./LICENSE">AGPL-3.0 License</a> •
 由 <a href="https://github.com/mindfold-ai">Mindfold</a> 构建，fork 由 <a href="https://github.com/Zhiwen-Liu">Zhiwen-Liu</a> 维护
