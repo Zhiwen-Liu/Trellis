@@ -163,7 +163,7 @@ Concrete edit list for the standard flow (post-`docs-promote.sh`, both languages
 
 ### First dual-package GA promote
 
-0.6.0 was the first GA where both `@mindfoldhq/trellis` (CLI) and `@mindfoldhq/trellis-core` (SDK) ship in lockstep. `bump-versions.js promote` rewrites both `package.json` files and the CLI's `dependencies["@mindfoldhq/trellis-core"]` from `workspace:*` to the exact version at release time. `release-preflight verify-packed-cli` exists specifically to catch a divergence here — always run it before `pnpm release:promote`.
+0.6.0 was the first GA where both `@zhiwenliu/trellis` (CLI) and `@zhiwenliu/trellis-core` (SDK) ship in lockstep. `bump-versions.js promote` rewrites both `package.json` files and the CLI's `dependencies["@zhiwenliu/trellis-core"]` from `workspace:*` to the exact version at release time. `release-preflight verify-packed-cli` exists specifically to catch a divergence here — always run it before `pnpm release:promote`.
 
 ### Stale navbar Changelog `href` gotcha
 
