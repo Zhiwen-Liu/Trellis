@@ -12,9 +12,9 @@ This project is managed by Trellis. The working knowledge you need lives under `
 
 If a Trellis command is available on your platform (e.g. `/trellis:finish-work`, `/trellis:continue`), prefer it over manual steps. Not every platform exposes every command.
 
-If you're using Codex or another agent-capable tool, additional project-scoped helpers may live in:
+If you're using an agent-capable host, additional project-scoped helpers may live in:
 - `.agents/skills/` — reusable Trellis skills
-- `.codex/agents/` — optional custom subagents
+- `.kerminal/skills/` — Kerminal entry skills and Trellis agent prompts
 
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 
@@ -53,13 +53,17 @@ This project is indexed by GitNexus as **Trellis** (14336 symbols, 20870 relatio
 
 ## CLI
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Task | Skill |
+|------|-------|
+| Understand architecture / "How does X work?" | `gitnexus-exploring` |
+| Blast radius / "What breaks if I change X?" | `gitnexus-impact-analysis` |
+| Trace bugs / "Why is X failing?" | `gitnexus-debugging` |
+| Rename / extract / split / refactor | `gitnexus-refactoring` |
+| Tools, resources, schema reference | `gitnexus-guide` |
+| Index, status, clean, wiki CLI commands | `gitnexus-cli` |
+
+These skills are installed by GitNexus into the host's skill root
+(e.g. `~/.claude/skills/gitnexus/`, `~/.agents/skills/gitnexus/`); this
+repo does not vendor them.
 
 <!-- gitnexus:end -->
