@@ -89,10 +89,10 @@ function assertBranchMatchesType(type, branch) {
     }
     return;
   }
-  if (branch !== "main") {
+  if (branch !== "main" && branch !== "kerminal") {
     fail(
-      `${type} releases come from main, not "${branch}". ` +
-        `Merge this branch into main first, or use release:beta / release:rc.`,
+      `${type} releases come from main or kerminal, not "${branch}". ` +
+        `Merge this branch into one of those first, or use release:beta / release:rc.`,
     );
   }
 }
