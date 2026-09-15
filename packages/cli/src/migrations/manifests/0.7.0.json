@@ -1,0 +1,9 @@
+{
+  "version": "0.7.0",
+  "description": "First stable release of the Kerminal-only distribution \u2014 rebrand as TrellisKerminal, single npm package.",
+  "breaking": true,
+  "recommendMigrate": false,
+  "changelog": "**Kerminal-only 0.7.0 stable.** Drops the other 22 upstream platforms, collapses configurators/templates to Kerminal only, renames the npm package to `trellis-kerminal`, and aligns docs/specs/CI with the single-repo layout.",
+  "migrations": [],
+  "notes": "Install: `npm install -g trellis-kerminal`. No migrations required."
+}
