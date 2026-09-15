@@ -25,7 +25,6 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import (
-    get_codex_dispatch_mode,
     get_packages,
     get_session_auto_commit,
     is_monorepo,
@@ -235,12 +234,12 @@ def _restore_child_links(unlinked: dict[Path, str | None]) -> None:
 # =============================================================================
 
 # Config directories of platforms that consume implement.jsonl / check.jsonl.
-# Keep in sync with src/types/ai-tools.ts AI_TOOLS entries — these are the
-# platforms listed in workflow.md's "agent-capable" Skill Routing block.
-# Codex is checked separately because explicit inline mode does not consume
-# JSONL. Kilo / Antigravity / Devin are NOT in this list either: they load
-# specs through skills instead of JSONL.
+# Config dirs that mark a sub-agent-capable Trellis installation. Historical
+# platform dirs are probed defensively so a project migrated from upstream
+# Trellis still resolves; kerminal-only installs only ever have ".kerminal".
 _SUBAGENT_CONFIG_DIRS: tuple[str, ...] = (
+    ".kerminal",  # Kerminal
+    # Legacy upstream platform dirs (defensive; not written by this fork)
     ".claude",
     ".cursor",
     ".kiro",
@@ -248,32 +247,23 @@ _SUBAGENT_CONFIG_DIRS: tuple[str, ...] = (
     ".opencode",
     ".qoder",
     ".codebuddy",
-    ".factory",   # Factory Droid
+    ".factory",
     ".github/copilot",
-    ".pi",        # Pi Agent
-    ".trae",      # Trae IDE
-    ".omp",       # Oh My Pi
-    ".zcode",     # ZCode
-    ".grok",      # Grok Build
-    ".kimi-code", # Kimi Code
-    ".kerminal",  # Kerminal
+    ".pi",
+    ".trae",
+    ".omp",
+    ".zcode",
+    ".grok",
+    ".kimi-code",
 )
-_CODEX_CONFIG_DIR = ".codex"
-
-
 def _has_subagent_platform(repo_root: Path) -> bool:
     """Return True if any sub-agent-capable platform is configured.
 
-    Detected by probing well-known config directories at the repo root. Codex
-    counts by default through ``codex.dispatch_mode: auto`` (including the
-    legacy ``sub-agent`` alias); explicit inline mode loads context through
-    skills, not JSONL.
+    Detected by probing well-known config directories at the repo root.
     """
     for config_dir in _SUBAGENT_CONFIG_DIRS:
         if (repo_root / config_dir).is_dir():
             return True
-    if (repo_root / _CODEX_CONFIG_DIR).is_dir():
-        return get_codex_dispatch_mode(repo_root) == "auto"
     return False
 
 
@@ -702,7 +692,7 @@ def cmd_create(args: argparse.Namespace) -> int:
             "      list available specs: python3 .trellis/scripts/get_context.py --mode packages",
             file=sys.stderr,
         )
-    print("  - Use /trellis:continue or phase context to decide the next step", file=sys.stderr)
+    print("  - Load the trellis-continue skill (or phase context) to decide the next step", file=sys.stderr)
     print("", file=sys.stderr)
 
     # Output relative path for script chaining

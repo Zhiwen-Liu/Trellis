@@ -12,11 +12,7 @@ import path from "node:path";
 import { DIR_NAMES, FILE_NAMES } from "../constants/paths.js";
 import { ALL_MANAGED_DIRS } from "../configurators/index.js";
 import {
-  scrubCodexConfigToml,
-  scrubHooksJson,
   scrubManagedMarkdownBlock,
-  scrubOpencodePackageJson,
-  scrubPiSettings,
   type ScrubResult,
 } from "./uninstall-scrubbers.js";
 import {
@@ -24,14 +20,6 @@ import {
   TRELLIS_BLOCK_END,
   TRELLIS_BLOCK_START,
 } from "./managed-paths.js";
-
-// Frozen from `templates/copilot/index.js` @ 0.6.20 (module removed in the
-// Kerminal-only registry collapse). Only the managed-block markers are needed
-// to scrub a legacy `.github/copilot-instructions.md` during uninstall.
-const COPILOT_INSTRUCTIONS_PATH = ".github/copilot-instructions.md";
-const COPILOT_INSTRUCTIONS_BLOCK_START =
-  "<!-- TRELLIS:COPILOT-GUIDANCE:START -->";
-const COPILOT_INSTRUCTIONS_BLOCK_END = "<!-- TRELLIS:COPILOT-GUIDANCE:END -->";
 
 export interface StructuredFileSpec {
   /** Manifest path (POSIX). */
@@ -166,58 +154,6 @@ export function assertSafeManagedPath(
  */
 export function buildStructuredFileSpecs(): Map<string, StructuredFileSpec> {
   const specs: StructuredFileSpec[] = [
-    ...(
-      [
-        ".claude/settings.json",
-        ".gemini/settings.json",
-        ".factory/settings.json",
-        ".codebuddy/settings.json",
-        ".qoder/settings.json",
-        ".codex/hooks.json",
-        ".trae/hooks.json",
-      ] as const
-    ).map(
-      (posixPath): StructuredFileSpec => ({
-        posixPath,
-        reason: "Strip trellis hooks; preserve user fields",
-        scrub: (content, deletedPaths) =>
-          scrubHooksJson(content, deletedPaths, "nested"),
-      }),
-    ),
-    ...([".cursor/hooks.json", ".github/copilot/hooks.json"] as const).map(
-      (posixPath): StructuredFileSpec => ({
-        posixPath,
-        reason: "Strip trellis hooks; preserve user fields",
-        scrub: (content, deletedPaths) =>
-          scrubHooksJson(content, deletedPaths, "flat"),
-      }),
-    ),
-    {
-      posixPath: ".opencode/package.json",
-      reason: "Remove @opencode-ai/plugin dep; preserve other deps",
-      scrub: (content) => scrubOpencodePackageJson(content),
-    },
-    {
-      posixPath: ".pi/settings.json",
-      reason:
-        "Strip trellis extension/skills/prompts entries; preserve user fields",
-      scrub: (content) => scrubPiSettings(content),
-    },
-    {
-      posixPath: ".codex/config.toml",
-      reason: "Remove trellis project_doc_fallback_filenames and notes",
-      scrub: (content) => scrubCodexConfigToml(content),
-    },
-    {
-      posixPath: COPILOT_INSTRUCTIONS_PATH,
-      reason: "Remove Trellis Copilot guidance; preserve repo instructions",
-      scrub: (content) =>
-        scrubManagedMarkdownBlock(
-          content,
-          COPILOT_INSTRUCTIONS_BLOCK_START,
-          COPILOT_INSTRUCTIONS_BLOCK_END,
-        ),
-    },
     {
       posixPath: FILE_NAMES.AGENTS,
       reason: "Strip Trellis managed block; preserve user instructions",

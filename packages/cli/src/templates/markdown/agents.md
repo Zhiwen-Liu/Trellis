@@ -10,11 +10,15 @@ This project is managed by Trellis. The working knowledge you need lives under `
 - `.trellis/workspace/` — per-developer journals and session traces
 - `.trellis/tasks/` — active and archived tasks (PRDs, research, jsonl context)
 
-If a Trellis command is available on your platform (e.g. `/trellis:finish-work`, `/trellis:continue`), prefer it over manual steps. Not every platform exposes every command.
+**Session start / resume**: this platform has no session-start hook, so load the entry skills explicitly:
 
-If you're using an agent-capable host, additional project-scoped helpers may live in:
-- `.agents/skills/` — reusable Trellis skills
-- `.kerminal/skills/` — Kerminal entry skills and Trellis agent prompts
+- Starting a session (or when the user opens a new one) → load the `trellis-start` skill (`.kerminal/skills/trellis-start/SKILL.md`) and follow its steps.
+- The user wants to resume the current task → load `trellis-continue` (`.kerminal/skills/trellis-continue/SKILL.md`).
+- The user says "finish the trellis task" or the session is wrapping up → load `trellis-finish-work` (`.kerminal/skills/trellis-finish-work/SKILL.md`).
+
+Additional project-scoped helpers live in:
+- `.agents/skills/` — reusable Trellis skills (brainstorm, before-dev, check, break-loop, update-spec, bundled skills)
+- `.kerminal/skills/` — Kerminal entry skills and Trellis agent prompts (trellis-implement / trellis-check / trellis-research are skills here: load the skill content and spawn a generic sub-agent with it)
 
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 

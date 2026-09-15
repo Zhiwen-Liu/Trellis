@@ -69,6 +69,11 @@ const { claudeProjectDirFromCwd } =
 const { codexListSessions, codexExtractDialogue, codexSearch } =
   await import("../../../src/core/mem/adapters/codex.js");
 const {
+  kerminalListSessions,
+  kerminalExtractDialogue,
+  kerminalSearch,
+} = await import("../../../src/core/mem/adapters/kerminal.js");
+const {
   grokListSessions,
   grokExtractDialogue,
   grokSearch,
@@ -110,6 +115,7 @@ function mkFilter(overrides: Partial<MemFilter> = {}): MemFilter {
 
 const CLAUDE_PROJECTS = nodePath.join(fakeHome, ".claude", "projects");
 const CODEX_SESSIONS = nodePath.join(fakeHome, ".codex", "sessions");
+const KERMINAL_SESSIONS = nodePath.join(fakeHome, ".kerminal", "sessions");
 const GROK_SESSIONS = nodePath.join(fakeHome, ".grok", "sessions");
 const PI_SESSIONS = nodePath.join(fakeHome, ".pi", "agent", "sessions");
 
@@ -845,6 +851,94 @@ describe("codexListSessions / codexExtractDialogue", () => {
 // =============================================================================
 // Grok adapter
 // =============================================================================
+
+describe("kerminalListSessions / kerminalExtractDialogue", () => {
+  const sessionId = "abc-kerminal-session";
+  const projectCwd = "/tmp/kerminal-project";
+  const fileName = `rollout-2026-09-01T09-30-00-${sessionId}.jsonl`;
+  const sessionFile = nodePath.join(
+    KERMINAL_SESSIONS,
+    "2026",
+    "09",
+    "01",
+    fileName,
+  );
+
+  beforeEach(() => {
+    nodeFs.mkdirSync(nodePath.dirname(sessionFile), { recursive: true });
+  });
+
+  afterEach(() => {
+    rimraf(KERMINAL_SESSIONS);
+  });
+
+  it("returns no sessions when ~/.kerminal/sessions/ doesn't exist", () => {
+    rimraf(KERMINAL_SESSIONS);
+    expect(kerminalListSessions(mkFilter())).toEqual([]);
+  });
+
+  it("reads a kerminal-originated rollout and tags platform kerminal", () => {
+    writeJsonl(sessionFile, [
+      {
+        timestamp: "2026-09-01T09:30:00.000Z",
+        type: "session_meta",
+        payload: {
+          id: sessionId,
+          cwd: projectCwd,
+          originator: "kerminal_cli_rs",
+        },
+      },
+      {
+        timestamp: "2026-09-01T09:30:01.000Z",
+        type: "response_item",
+        payload: {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: "检视当前项目" }],
+        },
+      },
+      {
+        timestamp: "2026-09-01T09:30:02.000Z",
+        type: "response_item",
+        payload: {
+          type: "message",
+          role: "assistant",
+          content: [{ type: "output_text", text: "好的，开始检视。" }],
+        },
+      },
+    ]);
+    const sessions = kerminalListSessions(mkFilter());
+    const s = sessions.find((x) => x.id === sessionId);
+    expect(s).toBeDefined();
+    expect(s?.platform).toBe("kerminal");
+    expect(s?.cwd).toBe(projectCwd);
+    if (!s) return;
+    expect(kerminalExtractDialogue(s)).toEqual([
+      { role: "user", text: "检视当前项目" },
+      { role: "assistant", text: "好的，开始检视。" },
+    ]);
+    const hit = kerminalSearch(s, "检视");
+    expect(hit.userCount).toBe(1);
+    expect(hit.asstCount).toBe(1);
+    expect(hit.excerpts[0]?.turnIndex ?? hit.excerpts[0]?.snippet).toBeDefined();
+  });
+
+  it("does not leak kerminal sessions into the codex listing", () => {
+    writeJsonl(sessionFile, [
+      {
+        timestamp: "2026-09-01T09:30:00.000Z",
+        type: "session_meta",
+        payload: { id: sessionId, cwd: projectCwd },
+      },
+    ]);
+    expect(codexListSessions(mkFilter()).map((x) => x.id)).not.toContain(
+      sessionId,
+    );
+    expect(kerminalListSessions(mkFilter()).map((x) => x.id)).toContain(
+      sessionId,
+    );
+  });
+});
 
 describe("grokListSessions / grokExtractDialogue", () => {
   const projectCwd = "/tmp/grok-project";

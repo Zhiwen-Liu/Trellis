@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  collectPlatformTemplates,
-  PLATFORM_IDS,
-} from "../../src/configurators/index.js";
-import type { AITool } from "../../src/types/ai-tools.js";
-import {
   scriptsInit,
   commonInit,
   commonPaths,
@@ -13,7 +8,6 @@ import {
   commonTaskQueue,
   commonTaskUtils,
   commonActiveTask,
-  commonCliAdapter,
   getDeveloperScript,
   initDeveloperScript,
   taskScript,
@@ -42,8 +36,7 @@ describe("trellis template constants", () => {
     commonTaskQueue,
     commonTaskUtils,
     commonActiveTask,
-    commonCliAdapter,
-    getDeveloperScript,
+      getDeveloperScript,
     initDeveloperScript,
     taskScript,
     getContextScript,
@@ -129,87 +122,15 @@ describe("trellis template constants", () => {
     expect(workflowMdTemplate).toContain("#");
   });
 
-  it("[codex-native-subagents] workflow.md preserves the dispatch prompt for Codex native fallback", () => {
-    // The in_progress breadcrumb instructs the main agent to prefix
-    // dispatch prompts with "Active task: <path>". Codex uses native
-    // SubagentStart context injection, but retains this child-side fallback
-    // whenever a project hook is unavailable or untrusted.
-    const block = inProgressBreadcrumb();
-    expect(block).toContain("Active task:");
-    expect(workflowMdTemplate).toContain("native Codex `SubagentStart`");
-    expect(workflowMdTemplate).toContain("child-side pull fallback");
-  });
-
-  it("[codex-native-subagents] Codex uses the native hook implement block, while class-2 platforms stay pull-based", () => {
+  it("workflow.md routes every platform through the Kerminal block", () => {
     const implement = stepSection("2.1");
-    const hookAutoBlock = platformBlock(
-      implement,
-      "[Claude Code, Cursor, OpenCode, codex-sub-agent, CodeBuddy, Droid, Pi, ZCode, Snow, Oh My Pi]",
-    );
-    const pullBasedMarker =
-      "[Gemini, Qoder, Copilot, Reasonix, Trae, Grok, Kimi Code]";
-    const pullBasedBlock = platformBlock(implement, pullBasedMarker);
-    // Kerminal has no project-level sub-agent registry, so its 2.1 guidance
-    // is a dedicated [Kerminal] block (load agent skill → generic spawn)
-    // instead of the pull-based group block.
     const kerminalBlock = platformBlock(implement, "[Kerminal]");
 
-    const workflowLabelByPlatform: Partial<Record<AITool, string>> = {
-      kerminal: "Kerminal",
-    };
-    const generatedPullBasedLabels = PLATFORM_IDS.flatMap((id) => {
-      const templates = collectPlatformTemplates(id);
-      const hasPullBasedPrelude =
-        templates !== undefined &&
-        [...templates.entries()].some(
-          ([filePath, content]) =>
-            /trellis-(implement|check)/.test(filePath) &&
-            content.includes("Required: Load Trellis Context First"),
-        );
-      if (!hasPullBasedPrelude) {
-        return [];
-      }
-      const label = workflowLabelByPlatform[id];
-      expect(
-        label,
-        `${id} generates pull-based agent definitions but has no workflow marker mapping`,
-      ).toBeDefined();
-      return [label as string];
-    });
-
-    const pullBasedLabels = [...generatedPullBasedLabels];
-    for (const label of pullBasedLabels) {
-      const block = label === "Kerminal" ? kerminalBlock : pullBasedBlock;
-      expect(block, `${label} must use pull-based 2.1 guidance`).toContain(
-        label,
-      );
-      expect(
-        hookAutoBlock,
-        `${label} must not use hook/plugin auto-handles 2.1 guidance`,
-      ).not.toContain(label);
-    }
     expect(kerminalBlock).toContain("Active task: <task path>");
     expect(kerminalBlock).toContain("auto-injects the project `AGENTS.md`");
-    expect(pullBasedBlock).toContain(
-      "The pull-based sub-agent definition auto-handles the context load requirement",
-    );
-    expect(hookAutoBlock).toContain("codex-sub-agent");
-    expect(hookAutoBlock).toContain("SubagentStart");
-  });
-
-  it("[codex-native-subagents] template mode helpers default to auto and fail invalid values closed to inline", () => {
-    const scripts = getAllScripts();
-    const config = scripts.get("common/config.py") ?? "";
-    const workflowPhase = scripts.get("common/workflow_phase.py") ?? "";
-    const taskStore = scripts.get("common/task_store.py") ?? "";
-
-    expect(config).toContain('DEFAULT_CODEX_DISPATCH_MODE = "auto"');
-    expect(config).toContain('if mode == "sub-agent":');
-    expect(config).toContain('return "auto"');
-    expect(config).toContain("using inline");
-    expect(workflowPhase).toContain('mode = "auto"');
-    expect(workflowPhase).toContain('return "codex-sub-agent" if mode == "auto" else "codex-inline"');
-    expect(taskStore).toContain('get_codex_dispatch_mode(repo_root) == "auto"');
+    // No other platform's guidance remains in the shipped template.
+    expect(implement).not.toContain("The pull-based sub-agent definition auto-handles");
+    expect(implement).not.toContain("SubagentStart");
   });
 
   it("[issue-237] workflow.md in_progress breadcrumb self-exempts implement/check sub-agents", () => {
@@ -229,16 +150,16 @@ describe("trellis template constants", () => {
   it("[issue-237] workflow.md Phase 2 dispatch steps require prompt recursion guards", () => {
     expect(workflowMdTemplate).toContain("**Dispatch prompt guard**");
     expect(workflowMdTemplate).toContain(
-      "already the `trellis-implement` sub-agent",
+      "already `trellis-implement` and must implement directly",
     );
     expect(workflowMdTemplate).toContain(
-      "not spawn another `trellis-implement` / `trellis-check`",
+      "without spawning another `trellis-implement` / `trellis-check`",
     );
     expect(workflowMdTemplate).toContain(
-      "already the `trellis-check` sub-agent",
+      "already `trellis-check` and must review/fix directly",
     );
     expect(workflowMdTemplate).toContain(
-      "not spawn another `trellis-check` / `trellis-implement`",
+      "without spawning another `trellis-check` / `trellis-implement`",
     );
   });
 
@@ -270,12 +191,9 @@ describe("trellis template constants", () => {
 
   it("workflow.md planning breadcrumbs mention parent child split guidance", () => {
     const planning = workflowStateBreadcrumb("planning");
-    const planningInline = workflowStateBreadcrumb("planning-inline");
-    for (const block of [planning, planningInline]) {
-      expect(block).toContain("Multi-deliverable scope");
-      expect(block).toContain("parent task plus independently verifiable child tasks");
-      expect(block).toContain("not implied by tree position");
-    }
+    expect(planning).toContain("Multi-deliverable scope");
+    expect(planning).toContain("parent task plus independently verifiable child tasks");
+    expect(planning).toContain("not implied by tree position");
   });
 
   it("workflow.md ships a task_error breadcrumb that repairs the existing task", () => {

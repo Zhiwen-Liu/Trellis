@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import chalk from "chalk";
 import inquirer from "inquirer";
@@ -55,16 +54,6 @@ import {
 import { replacePythonCommandLiterals } from "../configurators/shared.js";
 import { ensureGitattributes } from "../configurators/workflow.js";
 import { pruneOrphanManifestKeys } from "../utils/manifest-prune.js";
-import {
-  fetchRegistrySpecTemplates,
-  collectDirectoryFiles,
-  removeDirectory,
-  parseRegistrySource,
-  probeRegistryIndex,
-  downloadTemplateById,
-  type RegistrySource,
-} from "../utils/template-fetcher.js";
-import { loadSpecRegistryConfig } from "../utils/registry-config.js";
 import {
   cleanupEmptyDirs,
   TRELLIS_BLOCK_END,
@@ -573,7 +562,12 @@ export function applyConfigSectionsAdded(
     let userContent: string;
     try {
       userContent = fs.readFileSync(targetPath, "utf-8");
-    } catch {
+    } catch (err) {
+      console.warn(
+        chalk.yellow(
+          `  ⚠ Could not read ${entry.file}, skipping config section "${entry.sectionHeading}": ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
       continue;
     }
     if (userContent.includes(entry.sentinel)) continue;
@@ -588,7 +582,12 @@ export function applyConfigSectionsAdded(
     const newContent = userContent + separator + section + "\n";
     try {
       fs.writeFileSync(targetPath, newContent);
-    } catch {
+    } catch (err) {
+      console.warn(
+        chalk.yellow(
+          `  ⚠ Could not write config section "${entry.sectionHeading}" to ${entry.file}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
       continue;
     }
     console.log(
@@ -606,118 +605,6 @@ export function applyConfigSectionsAdded(
  * Collect all template files that should be managed by update
  * Only collects templates for platforms that are already configured (have directories)
  */
-function preserveExistingRegistryConfig(cwd: string, template: string): string {
-  const registry = loadSpecRegistryConfig(cwd);
-  if (!registry) return template;
-  return (
-    template.trimEnd() +
-    "\n\n" +
-    "#-------------------------------------------------------------------------------\n" +
-    "# Registry\n" +
-    "#-------------------------------------------------------------------------------\n\n" +
-    "# Source used to install .trellis/spec. trellis update refreshes this\n" +
-    "# hash-tracked spec template while preserving local edits through the\n" +
-    "# normal update conflict flow.\n" +
-    "registry:\n" +
-    "  spec:\n" +
-    `    source: ${registry.source}\n` +
-    (registry.template ? `    template: ${registry.template}\n` : "")
-  );
-}
-
-async function collectRegistrySpecTemplates(
-  cwd: string,
-): Promise<Map<string, string>> {
-  const config = loadSpecRegistryConfig(cwd);
-  if (!config) return new Map();
-
-  let registry: RegistrySource;
-  try {
-    registry = parseRegistrySource(config.source);
-  } catch (error) {
-    console.log(
-      chalk.yellow(
-        `Warning: invalid registry.spec.source in .trellis/config.yaml: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      ),
-    );
-    return new Map();
-  }
-
-  const probe = await probeRegistryIndex(
-    `${registry.rawBaseUrl}/index.json`,
-    registry,
-  );
-  if (probe.templates.length > 0) {
-    if (!config.template) {
-      console.log(
-        chalk.gray(
-          "Registry spec update skipped: marketplace registries require registry.spec.template.",
-        ),
-      );
-      return new Map();
-    }
-    const template = probe.templates.find(
-      (candidate) => candidate.id === config.template,
-    );
-    if (!template) {
-      console.log(
-        chalk.yellow(
-          `Warning: registry spec update skipped: template "${config.template}" was not found in registry index.`,
-        ),
-      );
-      return new Map();
-    }
-    const tempRoot = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "trellis-registry-template-"),
-    );
-    try {
-      const result = await downloadTemplateById(
-        tempRoot,
-        config.template,
-        "overwrite",
-        template,
-        registry,
-        undefined,
-        probe.backend,
-      );
-      if (!result.success) {
-        console.log(
-          chalk.yellow(
-            `Warning: registry spec update skipped: ${result.message}`,
-          ),
-        );
-        return new Map();
-      }
-      return collectDirectoryFiles(path.join(tempRoot, PATHS.SPEC), PATHS.SPEC);
-    } finally {
-      await removeDirectory(tempRoot);
-    }
-  }
-  if (!probe.isNotFound) {
-    console.log(
-      chalk.yellow(
-        `Warning: registry spec update skipped: ${
-          probe.error?.message ?? "could not reach registry"
-        }`,
-      ),
-    );
-    return new Map();
-  }
-
-  const result = await fetchRegistrySpecTemplates(registry, probe.backend);
-  if (!result.success) {
-    console.log(
-      chalk.yellow(
-        `Warning: registry spec update skipped: ${result.message ?? "download failed"}`,
-      ),
-    );
-    return new Map();
-  }
-  return result.files;
-}
-
 async function collectTemplateFiles(
   cwd: string,
   /**
@@ -747,10 +634,7 @@ async function collectTemplateFiles(
   }
 
   // Configuration
-  files.set(
-    `${DIR_NAMES.WORKFLOW}/config.yaml`,
-    preserveExistingRegistryConfig(cwd, configYamlTemplate),
-  );
+  files.set(`${DIR_NAMES.WORKFLOW}/config.yaml`, configYamlTemplate);
   files.set(`${DIR_NAMES.WORKFLOW}/.gitignore`, gitignoreTemplate);
   // workflow.md is included here because it is runtime-parsed by
   // get_context.py and shared hooks. Keep it on the normal template update
@@ -772,10 +656,6 @@ async function collectTemplateFiles(
         files.set(filePath, content);
       }
     }
-  }
-
-  for (const [filePath, content] of await collectRegistrySpecTemplates(cwd)) {
-    files.set(filePath, content);
   }
 
   // Apply update.skip from config.yaml (unless bypassed for breaking release)

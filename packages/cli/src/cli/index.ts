@@ -79,27 +79,6 @@ program
   .option("-s, --skip-existing", "Skip existing files without asking")
   .option("--monorepo", "Force monorepo mode")
   .option("--no-monorepo", "Skip monorepo detection")
-  .option(
-    "-t, --template <name>",
-    "Use a remote spec template (e.g., electron-fullstack)",
-  )
-  .option(
-    "--overwrite",
-    "Overwrite existing spec directory when using template",
-  )
-  .option("--append", "Only add missing files when using template")
-  .option(
-    "-r, --registry <source>",
-    "Use a custom template registry (e.g., gh:myorg/myrepo/specs)",
-  )
-  .option(
-    "--workflow <id>",
-    "Workflow template id for .trellis/workflow.md (default: native; e.g., tdd, channel-driven-subagent-dispatch)",
-  )
-  .option(
-    "--workflow-source <source>",
-    "Custom marketplace source for the --workflow lookup (e.g., gh:myorg/myrepo/marketplace)",
-  )
   .action(async (options: Record<string, unknown>) => {
     try {
       await init(options);
@@ -248,7 +227,7 @@ program
 program
   .command("mem")
   .description(
-    "Search/recall AI conversation history across Claude Code, Codex, OpenCode, Pi (run 'trellis mem help' for subcommands and flags)",
+    "Search/recall AI conversation history (Kerminal, Claude Code, Codex, OpenCode, Pi, and more — run 'trellis mem help' for subcommands and flags)",
   )
   .allowUnknownOption(true)
   .helpOption(false)
@@ -274,16 +253,9 @@ program
 program
   .command("workflow")
   .description(
-    "List or switch the project's .trellis/workflow.md template (native, tdd, channel-driven-subagent-dispatch, or marketplace)",
+    "List or reset the project's .trellis/workflow.md to the bundled native template",
   )
-  .option(
-    "-t, --template <id>",
-    "Workflow template id (e.g., native, tdd, channel-driven-subagent-dispatch)",
-  )
-  .option(
-    "-m, --marketplace <source>",
-    "Custom marketplace source (e.g., gh:myorg/myrepo/marketplace)",
-  )
+  .option("-t, --template <id>", "Workflow template id (native)")
   .option("--list", "List available workflow templates and exit")
   .option("-f, --force", "Overwrite a modified workflow.md without asking")
   .option(
@@ -294,7 +266,6 @@ program
     try {
       await runWorkflowCommand({
         template: options.template as string | undefined,
-        marketplace: options.marketplace as string | undefined,
         list: options.list as boolean | undefined,
         force: options.force as boolean | undefined,
         createNew: options.createNew as boolean | undefined,

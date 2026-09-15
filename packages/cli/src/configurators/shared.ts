@@ -174,7 +174,8 @@ export function resolvePlaceholders(
  * `.agents/skills/` workspace alias).
  *
  * Identical to {@link resolvePlaceholders} except that {@link CMD_REF} is
- * rendered in a platform-neutral form (`` `name` (Trellis command) ``)
+ * rendered in a platform-neutral form (`name` (Trellis skill), no
+ * added backticks — templates supply their own wrapping pair)
  * instead of substituting a platform-specific prefix. This is the only
  * placeholder that varies between platforms in the auto-triggered skill templates
  * from `common/skills/`, so
@@ -196,10 +197,13 @@ export function resolvePlaceholdersNeutral(
 
   if (!context) return result;
 
-  // Neutral form for the only collision-causing placeholder
+  // Neutral form for the only collision-causing placeholder. Templates are
+  // expected to wrap the placeholder in their own backticks
+  // (`{{CMD_REF:x}}` → `x` (Trellis skill)); the replacement carries no
+  // backticks of its own so the surrounding pair stays well-formed.
   result = result.replace(
     RE_CMD_REF,
-    (_match, name: string) => `\`${name}\` (Trellis command)`,
+    (_match, name: string) => `${name} (Trellis skill)`,
   );
   result = result.replace(RE_EXECUTOR_AI, context.executorAI);
   result = result.replace(RE_USER_ACTION_LABEL, context.userActionLabel);
@@ -476,7 +480,7 @@ If the resolved task path has no \`prd.md\`, ask the user what to work on; do NO
 }
 
 /** Insert prelude into a markdown agent definition (after YAML frontmatter). */
-export function injectPullBasedPreludeMarkdown(
+function injectPullBasedPreludeMarkdown(
   content: string,
   agentType: SubAgentType,
 ): string {

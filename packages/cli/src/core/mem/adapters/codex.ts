@@ -33,7 +33,11 @@ import {
 } from "../dialogue.js";
 import { inRangeOverlap, sameProject } from "../filter.js";
 import { readJsonl, readJsonlFirst } from "../internal/jsonl.js";
-import { CODEX_SESSIONS, walkDir } from "../internal/paths.js";
+import {
+  CODEX_SESSIONS,
+  KERMINAL_SESSIONS,
+  walkDir,
+} from "../internal/paths.js";
 import { parseTaskPyCommandsAll } from "../phase.js";
 import { searchInDialogue } from "../search.js";
 import type {
@@ -41,10 +45,46 @@ import type {
   DialogueTurn,
   MemFilter,
   MemSessionInfo,
+  MemSourceKind,
   MemWarning,
   SearchHit,
   TaskPyEvent,
 } from "../types.js";
+
+// ---------- parameterized rollout reader ----------
+
+/**
+ * Codex-format rollout engine, shared with the Kerminal adapter (Kerminal
+ * writes Codex rollout JSONL with `originator: kerminal_cli_rs`). The codex
+ * exports below are the config-bound instances; `kerminal.ts` instantiates
+ * its own reader against `~/.kerminal/sessions`.
+ */
+export interface RolloutReaderConfig {
+  root: string;
+  platform: MemSourceKind;
+  /** Display name used inside warning messages, e.g. "Codex". */
+  vendorLabel: string;
+  /** Warning-code prefix, e.g. "codex". */
+  warnPrefix: string;
+}
+
+const CODEX_READER: RolloutReaderConfig = {
+  root: CODEX_SESSIONS,
+  platform: "codex",
+  vendorLabel: "Codex",
+  warnPrefix: "codex",
+};
+
+const KERMINAL_READER: RolloutReaderConfig = {
+  root: KERMINAL_SESSIONS,
+  platform: "kerminal",
+  vendorLabel: "Kerminal",
+  warnPrefix: "kerminal",
+};
+
+function warnCode(reader: RolloutReaderConfig, suffix: string): string {
+  return `${reader.warnPrefix}-${suffix}`;
+}
 
 // ---------- loose external shapes ----------
 
@@ -129,10 +169,13 @@ export function commandFromCodexArguments(
 
 // ---------- list ----------
 
-export function codexListSessions(f: MemFilter): MemSessionInfo[] {
-  if (!fs.existsSync(CODEX_SESSIONS)) return [];
+function listRolloutSessions(
+  reader: RolloutReaderConfig,
+  f: MemFilter,
+): MemSessionInfo[] {
+  if (!fs.existsSync(reader.root)) return [];
   const out: MemSessionInfo[] = [];
-  for (const file of walkDir(CODEX_SESSIONS)) {
+  for (const file of walkDir(reader.root)) {
     if (!file.endsWith(".jsonl")) continue;
     const base = path.basename(file, ".jsonl");
     const m = base.match(
@@ -155,7 +198,7 @@ export function codexListSessions(f: MemFilter): MemSessionInfo[] {
     if (!inRangeOverlap(created, updated, f)) continue;
 
     out.push({
-      platform: "codex",
+      platform: reader.platform,
       id,
       cwd,
       created,
@@ -164,6 +207,10 @@ export function codexListSessions(f: MemFilter): MemSessionInfo[] {
     });
   }
   return out;
+}
+
+export function codexListSessions(f: MemFilter): MemSessionInfo[] {
+  return listRolloutSessions(CODEX_READER, f);
 }
 
 // ---------- extract ----------
@@ -304,8 +351,8 @@ function agentEnvelopeRole(kind: string): DialogueRole {
   return kind === "FINAL_ANSWER" ? "assistant" : "user";
 }
 
-const WARN_ENCRYPTED_INTER_AGENT = "codex-inter-agent-encrypted";
-const WARN_COMPACTION_LOSSY = "codex-compaction-assistant-dropped";
+const WARN_ENCRYPTED_INTER_AGENT = "inter-agent-encrypted";
+const WARN_COMPACTION_LOSSY = "compaction-assistant-dropped";
 
 function pushWarningOnce(
   warnings: MemWarning[] | undefined,
@@ -348,6 +395,17 @@ export function collectCodexTurnsAndEvents(
   turns: DialogueTurn[];
   events: TaskPyEvent[];
 } {
+  return collectRolloutTurnsAndEvents(CODEX_READER, s, warnings);
+}
+
+function collectRolloutTurnsAndEvents(
+  reader: RolloutReaderConfig,
+  s: MemSessionInfo,
+  warnings?: MemWarning[],
+): {
+  turns: DialogueTurn[];
+  events: TaskPyEvent[];
+} {
   const pool = new CodexTurnPool();
   const events: TaskPyEvent[] = [];
   let encryptedInterAgent = 0;
@@ -361,8 +419,8 @@ export function collectCodexTurnsAndEvents(
         if (!recovered.some((t) => t.role === "assistant")) {
           pushWarningOnce(
             warnings,
-            WARN_COMPACTION_LOSSY,
-            `session ${s.id}: recovered ${recovered.length} pre-compaction turn(s) from Codex's retained history, but it retains user messages only — assistant replies from before the boundary are not in this file.`,
+            warnCode(reader, WARN_COMPACTION_LOSSY),
+            `session ${s.id}: recovered ${recovered.length} pre-compaction turn(s) from ${reader.vendorLabel}'s retained history, but it retains user messages only — assistant replies from before the boundary are not in this file.`,
           );
         }
       }
@@ -422,10 +480,13 @@ export function collectCodexTurnsAndEvents(
   if (encryptedInterAgent > 0) {
     pushWarningOnce(
       warnings,
-      WARN_ENCRYPTED_INTER_AGENT,
-      `session ${s.id}: ${encryptedInterAgent} inter-agent message payload(s) are stored encrypted by Codex and cannot be read back — the instructions driving this multi-agent run are not recoverable from the rollout.`,
+      warnCode(reader, WARN_ENCRYPTED_INTER_AGENT),
+      `session ${s.id}: ${encryptedInterAgent} inter-agent message payload(s) are stored encrypted by ${reader.vendorLabel} and cannot be read back — the instructions driving this multi-agent run are not recoverable from the rollout.`,
     );
   }
 
   return { turns: pool.toArray(), events };
 }
+
+/** Kerminal writes Codex-format rollouts; exposed for `adapters/kerminal.ts`. */
+export { collectRolloutTurnsAndEvents, listRolloutSessions, KERMINAL_READER };

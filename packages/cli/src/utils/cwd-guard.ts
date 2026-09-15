@@ -52,9 +52,9 @@ export function homedirGuardMessage(
 ): string {
   return (
     `✗ Refusing to run \`trellis ${commandName}\` in your home directory.\n\n` +
-    `Trellis manages platform config dirs like .claude/, .codex/, .opencode/, which\n` +
-    `in your home directory also contain runtime data from those CLIs (chat history,\n` +
-    `session JSONLs, caches). Running here can wipe that data.\n\n` +
+    `Trellis manages project state (.trellis/, .kerminal/, .agents/) and tracks\n` +
+    `those files in a hash manifest. Your home directory contains unrelated\n` +
+    `runtime data (shell history, caches); running here can wipe it.\n\n` +
     `Run trellis from your project directory instead. If you really want to run in\n` +
     `$HOME, set TRELLIS_ALLOW_HOMEDIR=1.`
   );

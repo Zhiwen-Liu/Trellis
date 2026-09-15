@@ -82,7 +82,7 @@ The workflow is simple:
 1. **Describe what you want** in natural language.
 2. **Brainstorm** with the AI one question at a time until the PRD is clear, then implementation begins.
 3. **Let it run** — the AI calls Trellis Implement and auto-checks the result against specs, lint, type-check, and tests.
-4. **Type `/trellis:finish-work`** when the work is done or the session context fills up. Trellis archives the task and updates journals.
+4. **Ask the agent to finish the trellis task** when the work is done or the session context fills up (Kerminal has no slash palette, so `/trellis:finish-work` becomes a plain request). Trellis archives the task and updates journals.
 
 ## How It Works
 
@@ -112,14 +112,14 @@ Those files are useful entry points, but they tend to become monolithic. Trellis
 <details>
 <summary><strong>Is Trellis only for Claude Code?</strong></summary>
 
-No. Trellis is a project layer that works across multiple coding agents and IDEs.
+TrellisKerminal targets [Kerminal](https://kerminal.cn/) as its only supported platform. Upstream Trellis supported 23 platforms; this distribution ships a single `trellis-kerminal` npm package.
 
 </details>
 
 <details>
 <summary><strong>Is Trellis for solo developers or teams?</strong></summary>
 
-Both. Solo developers use it for memory and repeatable workflow. Teams get the larger benefit: shared standards, task boundaries, reviewable context, and platform portability.
+Both. Solo developers use it for memory and repeatable workflow. Teams get the larger benefit: shared standards, task boundaries, and reviewable context.
 
 </details>
 

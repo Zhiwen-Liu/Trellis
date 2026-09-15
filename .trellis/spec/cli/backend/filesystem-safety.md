@@ -132,7 +132,7 @@ without the guard**:
 
 - Atomic write: write-succeeds + no tmp leftover + original survives a failed write (`test/utils/atomic-write.test.ts`; Python covered via `task-archive` integration).
 - Path traversal: `create '../../victim' --force` / `rm '../../victim'` throw and the external dir survives — reproduce in a sandbox (`test/channel/name-safety`, `test/commands/channel-name-safety`).
-- Ownership/backup gates: unowned source skipped (`update-internals` rename-dir gate), `archive src` refused with `src/` intact (`task-archive` integration), overwrite-fails-preserves-spec (`template-fetcher-overwrite`), uninstall refuses dirty `--yes` (`uninstall-dirty-guard`, real git).
+- Ownership/backup gates: unowned source skipped (`update-internals` rename-dir gate), `archive src` refused with `src/` intact (`task-archive` integration), uninstall refuses dirty `--yes` (`uninstall-dirty-guard`, real git).
 - Dogfood twin sync: identical `.py` path sets in both trees, plus one byte-compare case per file (`regression.test.ts` → "regression: .trellis/scripts stays byte-identical to templates/trellis/scripts"). The file list is derived from the filesystem, so a new script is covered the moment it is added.
 
 ---

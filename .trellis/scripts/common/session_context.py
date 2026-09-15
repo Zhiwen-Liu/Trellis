@@ -26,6 +26,7 @@ from .config import get_git_packages
 from .git import run_git
 from .packages_context import get_packages_section
 from .tasks import iter_active_tasks, load_task, get_all_statuses, children_progress
+from .workflow_phase import get_workflow_state_breadcrumb
 from .paths import (
     DIR_SCRIPTS,
     DIR_SPEC,
@@ -621,6 +622,7 @@ def get_context_text(repo_root: Path | None = None) -> str:
     # Current task
     lines.append("## CURRENT TASK")
     current_task = get_current_task(repo_root)
+    current_status: str | None = None
     if current_task:
         current_task_dir = repo_root / current_task
         source_type, context_key, _ = get_current_task_source(repo_root)
@@ -633,6 +635,7 @@ def get_context_text(repo_root: Path | None = None) -> str:
         if ct:
             lines.append(f"Name: {ct.name}")
             lines.append(f"Status: {ct.status}")
+            current_status = ct.status
             lines.append(f"Created: {ct.raw.get('createdAt', 'unknown')}")
             if ct.description:
                 lines.append(f"Description: {ct.description}")
@@ -645,6 +648,13 @@ def get_context_text(repo_root: Path | None = None) -> str:
     else:
         lines.append("(none)")
     lines.append("")
+
+    # Per-turn workflow-state breadcrumb. Pull-based platforms (Kerminal)
+    # have no injection hook, so the per-turn enforcement lines ride along
+    # with every context pull instead of being injected per turn.
+    breadcrumb = get_workflow_state_breadcrumb(current_status)
+    if breadcrumb:
+        lines.append(breadcrumb)
 
     # Active tasks
     lines.append("## ACTIVE TASKS")

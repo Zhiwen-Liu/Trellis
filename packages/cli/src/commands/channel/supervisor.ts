@@ -596,7 +596,19 @@ function readExternalShutdownReason(
 }
 
 function readConfig(p: string): SupervisorConfig {
-  return JSON.parse(fs.readFileSync(p, "utf-8")) as SupervisorConfig;
+  let raw: string;
+  try {
+    raw = fs.readFileSync(p, "utf-8");
+  } catch (err) {
+    throw new Error(
+      `Cannot read supervisor config ${p}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  try {
+    return JSON.parse(raw) as SupervisorConfig;
+  } catch {
+    throw new Error(`Supervisor config ${p} is not valid JSON`);
+  }
 }
 
 // Helper to write a fresh config file before forking the supervisor.

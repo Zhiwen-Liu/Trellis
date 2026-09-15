@@ -13,6 +13,10 @@ import * as path from "node:path";
 export const HOME = os.homedir();
 export const CLAUDE_PROJECTS = path.join(HOME, ".claude", "projects");
 export const CODEX_SESSIONS = path.join(HOME, ".codex", "sessions");
+/** Kerminal persisted-session root. Kerminal writes Codex-format rollout
+ * JSONL under `~/.kerminal/sessions/YYYY/MM/DD/rollout-<ts>-<id>.jsonl`
+ * (`originator: kerminal_cli_rs`), so the codex rollout engine reads it. */
+export const KERMINAL_SESSIONS = path.join(HOME, ".kerminal", "sessions");
 /** ZCode (Zhipu) persisted-session SQLite store. The companion `-wal` file is
  * auto-detected by the readonly parser. */
 export const ZCODE_DB = path.join(HOME, ".zcode", "cli", "db", "db.sqlite");

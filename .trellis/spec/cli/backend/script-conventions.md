@@ -570,8 +570,12 @@ platforms the ticket — checked *last* — is the path that actually fires.
 second task pointer and must never store a task path. A plain AI-run shell
 command cannot infer the current conversation/window unless the host process
 exports session identity in its environment or the command is launched with
-`TRELLIS_CONTEXT_ID`; without that identity, `task.py start` fails and explains
-how to provide a session runtime. For Claude Code, SessionStart receives
+`TRELLIS_CONTEXT_ID`; without that identity, `task.py start` on hook-capable
+platforms degrades gracefully (status still flips, warning printed) — and on a
+**Kerminal-class pull-based install** it never degrades at all: when no
+hook-platform config dir exists (`.claude/`, `.codex/`, …) the resolver
+substitutes the stable `kerminal_default` session key, so create / start /
+current / finish all land on one pointer file. For Claude Code, SessionStart receives
 `CLAUDE_ENV_FILE`; Trellis must append `export TRELLIS_CONTEXT_ID=<context-key>`
 there so later Bash tools inherit the same session identity. For OpenCode,
 `tool.execute.before` must prefix Bash commands with

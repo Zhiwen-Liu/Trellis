@@ -7,15 +7,8 @@
  *
  * The templates are GENERIC templates for user projects:
  * - src/templates/trellis/ - Workflow scripts and config
- * - src/templates/claude/ - Claude Code commands, agents, hooks
- * - src/templates/cursor/ - Cursor commands
- * - src/templates/iflow/ - iFlow CLI commands, agents, hooks
- * - src/templates/opencode/ - OpenCode commands, agents, hooks
- * - src/templates/codex/ - Codex agents, hooks, config
- * - src/templates/kilo/ - Kilo CLI commands
- * - src/templates/antigravity/ - Antigravity workflows
- * - src/templates/kiro/ - Kiro Code skills
- * - src/templates/gemini/ - Gemini CLI commands (TOML)
+ * - src/templates/kerminal/ - Kerminal skills and agent prompts
+ * - src/templates/common/ - Shared cross-platform template content
  * - src/templates/markdown/ - Markdown templates (spec, guides)
  *
  * Note: We NO LONGER copy from the project's own .trellis/, .cursor/, .claude/

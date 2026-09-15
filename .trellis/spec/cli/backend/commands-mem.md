@@ -17,6 +17,7 @@ CLIs already drop on disk:
 
 | Platform    | Session root                                                                                       |
 | ----------- | -------------------------------------------------------------------------------------------------- |
+| Kerminal    | `~/.kerminal/sessions/YYYY/MM/DD/rollout-<ts>-<id>.jsonl` (`originator: kerminal_cli_rs`; Codex rollout format, parsed by the shared engine in `adapters/codex.ts`) |
 | Claude Code | `~/.claude/projects/<sanitized-cwd>/<id>.jsonl`                                                    |
 | Codex       | `~/.codex/sessions/**/rollout-<ts>-<id>.jsonl`                                                     |
 | Devin CLI   | `~/.local/share/devin/cli/sessions.db` (Cognition terminal agent; `$XDG_DATA_HOME` / `%APPDATA%\devin\cli`; `DEVIN_DB_PATH` override). Not `trellis init --devin` (Desktop / Cascade) and not Factory Droid. |
@@ -50,8 +51,9 @@ invoked from the `tl` Commander wire.
 
 **Core owns** (`packages/cli/src/core/mem/`, public surface at `mem/index.ts` — **not** the `src/core/` root barrel):
 
-- persisted-session readers / adapters for Claude Code, Codex, Devin CLI, OpenCode, Pi,
-  and ZCode (`adapters/{claude,codex,devin,opencode,pi,zcode}.ts`)
+- persisted-session readers / adapters for Kerminal, Claude Code, Codex, Devin CLI, OpenCode, Pi,
+  and ZCode (`adapters/{kerminal,claude,codex,devin,opencode,pi,zcode}.ts`; the Kerminal
+  adapter reuses the Codex rollout engine — Kerminal writes Codex-format JSONL)
 - search, relevance scoring, excerpt selection (`search.ts`)
 - dialogue cleaning (`dialogue.ts`), filtering (`filter.ts`)
 - dialogue-context extraction (`context.ts`), brainstorm-phase slicing
@@ -133,6 +135,7 @@ three functions:
 
 | Platform | `*ListSessions(f)`                                   | `*ExtractDialogue(s)`     | `*Search(s, kw)`                                  |
 | -------- | ---------------------------------------------------- | ------------------------- | ------------------------------------------------- |
+| Kerminal | `core/mem/adapters/kerminal.ts:kerminalListSessions` | `kerminalExtractDialogue` | `kerminalSearch` (thin binding over the shared Codex rollout engine) |
 | Claude   | `core/mem/adapters/claude.ts:claudeListSessions`     | `claudeExtractDialogue`   | `claudeSearch`                                    |
 | Codex    | `core/mem/adapters/codex.ts:codexListSessions`       | `codexExtractDialogue`    | `codexSearch`                                     |
 | Devin    | `core/mem/adapters/devin.ts:devinListSessions`       | `devinExtractDialogue`    | `devinSearch`                                     |

@@ -89,10 +89,9 @@ def get_phase_index() -> str:
     section = "\n".join(lines[start:end]).rstrip()
     # Strip [workflow-state:STATUS]...[/workflow-state:STATUS] blocks since
     # they're injected separately by inject-workflow-state.py per-turn.
-    import re as _re
-    tag_re = _re.compile(
+    tag_re = re.compile(
         r"\[workflow-state:([A-Za-z0-9_-]+)\]\s*\n.*?\n\s*\[/workflow-state:\1\]\n?",
-        _re.DOTALL,
+        re.DOTALL,
     )
     return tag_re.sub("", section).rstrip() + "\n"
 
@@ -160,42 +159,16 @@ _PLATFORM_MARKER_LABELS: dict[str, str] = {
 }
 
 
-def resolve_effective_platform(platform: str, config: dict) -> str:
-    """Map ``codex`` to a dispatch-mode-namespaced virtual platform name.
-
-    When ``--platform codex`` is passed, return ``"codex-sub-agent"`` by
-    default or ``"codex-inline"`` when explicitly configured in
-    ``.trellis/config.yaml``. ``sub-agent`` remains an alias for ``auto``.
-    ``filter_platform`` then surfaces blocks whose marker lists include the
-    namespaced name (e.g. ``[codex-sub-agent, ...]`` or ``[codex-inline, Kilo,
-    Antigravity, Devin]``).
-
-    Native Codex context injection supports the ``auto`` default. Invalid
-    explicit values fall back to ``inline`` safely; this renderer deliberately
-    does not warn because it can run in normal CLI output flows.
+def resolve_effective_platform(platform: str) -> str:
+    """Map a platform id to its workflow.md marker label.
 
     Platforms whose marker label differs from their id resolve through
     ``_PLATFORM_MARKER_LABELS``. Everything else is returned unchanged.
+    (The upstream Codex dispatch-mode namespacing was removed with the
+    platform itself; any legacy ``codex`` value now passes through and
+    matches no block, which is the correct kerminal-only behavior.)
     """
-    label = _PLATFORM_MARKER_LABELS.get(platform.strip().lower())
-    if label:
-        return label
-    if platform == "codex":
-        mode = "auto"
-        codex_cfg = config.get("codex") if isinstance(config, dict) else None
-        if codex_cfg is not None:
-            if not isinstance(codex_cfg, dict):
-                mode = "inline"
-            else:
-                cfg_mode = str(codex_cfg.get("dispatch_mode", mode)).strip().lower()
-                if cfg_mode == "inline":
-                    mode = "inline"
-                elif cfg_mode in ("auto", "sub-agent"):
-                    mode = "auto"
-                else:
-                    mode = "inline"
-        return "codex-sub-agent" if mode == "auto" else "codex-inline"
-    return platform
+    return _PLATFORM_MARKER_LABELS.get(platform.strip().lower(), platform)
 
 
 def filter_platform(content: str, platform: str) -> str:
@@ -240,3 +213,57 @@ def filter_platform(content: str, platform: str) -> str:
             collapsed.append(line)
 
     return "\n".join(collapsed).rstrip() + "\n"
+
+
+def get_workflow_state_breadcrumb(status: str | None) -> str:
+    """Return the `[workflow-state:STATUS]` body for the given task status.
+
+    Pull-based platforms (Kerminal) have no per-turn injection hook, so the
+    per-turn enforcement lines would otherwise never reach the agent —
+    `get_phase_index` strips them by design. Context consumers (default
+    `get_context.py`, `trellis-start`) append this breadcrumb to restore the
+    "the workflow rules reach every turn" property with one pull.
+
+    Mapping: no active task → `no_task`; unreadable task → `task_error`;
+    `planning` → `planning`; anything else → `in_progress`. The `completed`
+    block is intentionally not mapped (cmd_archive removes the pointer in the
+    same call that flips status, so it is unreachable by design).
+    Returns "" for an unknown status or a missing/empty block.
+    """
+    if not status:
+        status = "no_task"
+    path = _workflow_md_path()
+    if not path.exists():
+        return ""
+    text = path.read_text(encoding="utf-8")
+    if not text:
+        return ""
+
+    tag_re = re.compile(
+        r"\[workflow-state:([A-Za-z0-9_-]+)\]\s*\n(.*?)\n\s*\[/workflow-state:\1\]",
+        re.DOTALL,
+    )
+    blocks = {m.group(1): m.group(2).strip() for m in tag_re.finditer(text)}
+
+    if status == "no_task":
+        key = "no_task"
+    elif status == "task_error":
+        key = "task_error"
+    elif status == "planning":
+        key = "planning"
+    else:
+        key = "in_progress"
+
+    body = blocks.get(key, "").strip()
+    if not body:
+        return ""
+
+    lines = [
+        "",
+        "---",
+        f"WORKFLOW STATE ({key}) — per-turn rules; applies now:",
+        "",
+    ]
+    lines.extend(body.splitlines())
+    lines.append("")
+    return "\n".join(lines)

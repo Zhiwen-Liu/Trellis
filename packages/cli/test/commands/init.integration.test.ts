@@ -22,27 +22,8 @@ vi.mock("inquirer", () => ({
 
 vi.mock("node:child_process", () => ({
   execSync: vi.fn().mockReturnValue(""),
+  execFileSync: vi.fn().mockReturnValue(""),
 }));
-
-const registryDownload = vi.hoisted(() => ({
-  files: new Map<string, string>(),
-}));
-
-vi.mock("giget", async () => {
-  const fs = await import("node:fs");
-  const path = await import("node:path");
-  return {
-    downloadTemplate: vi.fn(
-      async (_source: string, options: { dir: string }) => {
-        for (const [relativePath, content] of registryDownload.files) {
-          const targetPath = path.join(options.dir, relativePath);
-          fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-          fs.writeFileSync(targetPath, content, "utf-8");
-        }
-      },
-    ),
-  };
-});
 
 // Spy on configureKerminal (calls through to the real implementation) so the
 // tests can assert the init flow forwards `nonInteractive` — a missing flag
@@ -62,7 +43,7 @@ import { VERSION } from "../../src/constants/version.js";
 import { DIR_NAMES, FILE_NAMES, PATHS } from "../../src/constants/paths.js";
 import { configureKerminal } from "../../src/configurators/kerminal.js";
 import { computeHash } from "../../src/utils/template-hash.js";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {};
@@ -75,7 +56,6 @@ describe("init() integration", () => {
     vi.spyOn(process, "cwd").mockReturnValue(tmpDir);
     vi.spyOn(console, "log").mockImplementation(noop);
     vi.spyOn(console, "error").mockImplementation(noop);
-    registryDownload.files.clear();
     vi.mocked(execSync).mockClear();
     vi.mocked(execSync).mockImplementation(((cmd: string) => {
       const expectedPythonCmd =
@@ -85,6 +65,17 @@ describe("init() integration", () => {
       }
       return "";
     }) as typeof execSync);
+    vi.mocked(execFileSync).mockClear();
+    vi.mocked(execFileSync).mockImplementation(
+      ((cmd: string, args: string[]) => {
+        const expectedPythonCmd =
+          process.platform === "win32" ? "python" : "python3";
+        if (cmd === expectedPythonCmd && args?.[0] === "--version") {
+          return "Python 3.11.12";
+        }
+        return "";
+      }) as typeof execFileSync,
+    );
   });
 
   afterEach(() => {
@@ -293,23 +284,25 @@ describe("init() integration", () => {
   it("#7 passes developer name to init_developer script", async () => {
     await init({ yes: true, user: "testdev" });
 
-    const calls = vi.mocked(execSync).mock.calls;
+    const calls = vi.mocked(execFileSync).mock.calls;
     const match = calls.find(
-      ([cmd]) => typeof cmd === "string" && cmd.includes("init_developer.py"),
+      ([cmd, args]) =>
+        typeof cmd === "string" && (args ?? []).join(" ").includes("init_developer.py"),
     );
     expect(match).toBeDefined();
-    const command = String((match as [unknown])[0]);
+    const [command, args] = match as [string, string[]];
     const expectedPythonCmd =
       process.platform === "win32" ? "python" : "python3";
-    expect(command).toContain(`${expectedPythonCmd} "`);
-    expect(command).toContain('"testdev"');
+    expect(command).toBe(expectedPythonCmd);
+    expect(args?.[0]).toContain("init_developer.py");
+    expect(args?.[1]).toBe("testdev");
   });
 
   it("#7b throws when the selected Python command is below 3.9", async () => {
     // v0.5.7: init now tries a fallback chain (#236). Mock every candidate to
     // return the same too-old version so all candidates fail uniformly.
-    vi.mocked(execSync).mockImplementation(
-      (() => "Python 3.8.18") as typeof execSync,
+    vi.mocked(execFileSync).mockImplementation(
+      (() => "Python 3.8.18") as typeof execFileSync,
     );
 
     await expect(init({ yes: true, kerminal: true })).rejects.toThrow(
@@ -321,9 +314,9 @@ describe("init() integration", () => {
   it("#7c throws when the selected Python command is missing", async () => {
     // v0.5.7: init now tries a fallback chain (#236). Mock every candidate to
     // throw "not found" so all candidates fail.
-    vi.mocked(execSync).mockImplementation((() => {
+    vi.mocked(execFileSync).mockImplementation((() => {
       throw new Error("not found");
-    }) as typeof execSync);
+    }) as typeof execFileSync);
 
     await expect(init({ yes: true, kerminal: true })).rejects.toThrow(
       /No supported Python command found.*not found/s,
@@ -579,159 +572,6 @@ describe("init() integration", () => {
 
     // Should NOT create .trellis/ (early return)
     expect(fs.existsSync(path.join(tmpDir, DIR_NAMES.WORKFLOW))).toBe(false);
-  });
-
-  it("#20 -y --registry aborts on probe failure instead of direct download fallback", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-
-    await init({
-      yes: true,
-      registry: "bitbucket:myorg/registry/spec",
-    });
-
-    const logOutput = vi
-      .mocked(console.log)
-      .mock.calls.flat()
-      .filter((part): part is string => typeof part === "string")
-      .join("\n");
-
-    expect(logOutput).toContain("Error: Could not reach registry index");
-    expect(fs.existsSync(path.join(tmpDir, DIR_NAMES.WORKFLOW))).toBe(false);
-  });
-
-  it("#21 -y --registry records direct spec registry source and tracks downloaded spec files", async () => {
-    registryDownload.files.set("index.md", "# remote spec\n");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        status: 404,
-        ok: false,
-      }),
-    );
-
-    await init({
-      yes: true,
-      registry: `gitlab:local/registry/spec`,
-      overwrite: true,
-    });
-
-    const config = fs.readFileSync(
-      path.join(tmpDir, DIR_NAMES.WORKFLOW, "config.yaml"),
-      "utf-8",
-    );
-    expect(config).toContain("registry:");
-    expect(config).toContain("spec:");
-    expect(config).toContain("source: gitlab:local/registry/spec");
-
-    const hashFile = JSON.parse(
-      fs.readFileSync(
-        path.join(tmpDir, DIR_NAMES.WORKFLOW, ".template-hashes.json"),
-        "utf-8",
-      ),
-    ) as { hashes?: Record<string, string> };
-    expect(hashFile.hashes?.[".trellis/spec/index.md"]).toBe(
-      computeHash("# remote spec\n"),
-    );
-  });
-
-  it("#22 -y --registry --template records marketplace template source and tracks downloaded spec files", async () => {
-    registryDownload.files.set("index.md", "# golang spec\n");
-    const index = JSON.stringify({
-      version: 1,
-      templates: [
-        {
-          id: "golang-spec",
-          type: "spec",
-          name: "Golang",
-          path: "backend",
-        },
-      ],
-    });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(index),
-      }),
-    );
-
-    await init({
-      yes: true,
-      registry: "gitlab:local/registry/marketplace",
-      template: "golang-spec",
-      overwrite: true,
-    });
-
-    const config = fs.readFileSync(
-      path.join(tmpDir, DIR_NAMES.WORKFLOW, "config.yaml"),
-      "utf-8",
-    );
-    expect(config).toContain("registry:");
-    expect(config).toContain("spec:");
-    expect(config).toContain("source: gitlab:local/registry/marketplace");
-    expect(config).toContain("template: golang-spec");
-
-    const hashFile = JSON.parse(
-      fs.readFileSync(
-        path.join(tmpDir, DIR_NAMES.WORKFLOW, ".template-hashes.json"),
-        "utf-8",
-      ),
-    ) as { hashes?: Record<string, string> };
-    expect(hashFile.hashes?.[".trellis/spec/index.md"]).toBe(
-      computeHash("# golang spec\n"),
-    );
-  });
-
-  it("#23 existing project --registry --template still refreshes spec and records source", async () => {
-    await init({ yes: true, user: "alice" });
-
-    registryDownload.files.set("index.md", "# refreshed golang spec\n");
-    const index = JSON.stringify({
-      version: 1,
-      templates: [
-        {
-          id: "golang-spec",
-          type: "spec",
-          name: "Golang",
-          path: "backend",
-        },
-      ],
-    });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        text: () => Promise.resolve(index),
-      }),
-    );
-
-    await init({
-      yes: true,
-      user: "alice",
-      registry: "gitlab:local/registry/marketplace",
-      template: "golang-spec",
-      overwrite: true,
-    });
-
-    const config = fs.readFileSync(
-      path.join(tmpDir, DIR_NAMES.WORKFLOW, "config.yaml"),
-      "utf-8",
-    );
-    expect(config).toContain("source: gitlab:local/registry/marketplace");
-    expect(config).toContain("template: golang-spec");
-    expect(
-      fs.readFileSync(path.join(tmpDir, PATHS.SPEC, "index.md"), "utf-8"),
-    ).toBe("# refreshed golang spec\n");
-
-    const hashFile = JSON.parse(
-      fs.readFileSync(
-        path.join(tmpDir, DIR_NAMES.WORKFLOW, ".template-hashes.json"),
-        "utf-8",
-      ),
-    ) as { hashes?: Record<string, string> };
-    expect(hashFile.hashes?.[".trellis/spec/index.md"]).toBe(
-      computeHash("# refreshed golang spec\n"),
-    );
   });
 
   it("#19 polyrepo: writes git: true for sibling .git packages", async () => {

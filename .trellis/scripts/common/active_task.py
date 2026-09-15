@@ -25,7 +25,25 @@ DIR_TASKS = "tasks"
 DIR_RUNTIME = ".runtime"
 DIR_SESSIONS = "sessions"
 DIR_SHELL_TICKETS = "shell-tickets"
-# Pre-0.6.13 name, when the bridge was Cursor-only. Still read so a session that
+# Hook-capable platform config dirs. Their presence marks an install that may
+# run hooks (which own the session-identity bridge); a kerminal-only install
+# has none of these.
+_HOOK_PLATFORM_CONFIG_DIRS = (
+    ".claude",
+    ".cursor",
+    ".kiro",
+    ".gemini",
+    ".opencode",
+    ".qoder",
+    ".codebuddy",
+    ".factory",
+    ".pi",
+    ".trae",
+    ".omp",
+    ".zcode",
+    ".codex",
+)
+# Legacy name from when the bridge was Cursor-only. Still read so a session that
 # was mid-command across an upgrade does not silently degrade; never written.
 # Tickets are 30-second ephemera, so the old directory ages out by itself —
 # there is nothing to migrate, only a glob on a directory that is normally
@@ -39,7 +57,12 @@ _SESSION_KEYS = ("session_id", "sessionId", "sessionID")
 _CONVERSATION_KEYS = ("conversation_id", "conversationId", "conversationID")
 _TRANSCRIPT_KEYS = ("transcript_path", "transcriptPath", "transcript")
 _NESTED_KEYS = ("input", "properties", "event", "hook_input", "hookInput")
+# Known platform prefixes, used to attribute a context key (whose shape is
+# `<platform>_<hash>`) back to its platform. Kerminal is the only platform this
+# fork writes; the rest are recognized defensively so context files created
+# under upstream Trellis keep resolving after a migration.
 _KNOWN_PLATFORMS = {
+    "kerminal",
     "claude",
     "codex",
     "cursor",
@@ -54,7 +77,6 @@ _KNOWN_PLATFORMS = {
     "trae",
     "grok",
     "kimi",
-    "kerminal",
     "zcode",
     "snow",
     "dsh",
@@ -552,7 +574,15 @@ def resolve_context_key(
     # Last in the chain on purpose: a platform that genuinely exports identity
     # into the shell outranks a ticket, and no platform name gates the lookup.
     if allow_environment_context:
-        return _lookup_shell_ticket_context_key()
+        ticket_key = _lookup_shell_ticket_context_key()
+        if ticket_key:
+            return ticket_key
+
+    # Kerminal-class pull-based install: no hook bridge, no platform env var,
+    # no ticket writer. The install is the session — use the stable default
+    # key so create/start/current/finish all land on one session file.
+    if _is_single_session_platform():
+        return _default_session_key()
     return None
 
 
@@ -644,12 +674,42 @@ def _context_path(repo_root: Path, context_key: str) -> Path:
     return _runtime_sessions_dir(repo_root) / f"{context_key}.json"
 
 
+def _is_single_session_platform() -> bool:
+    """Return True when the caller runs on a Kerminal-class pull-based install.
+
+    Kerminal has no hook bridge and no platform session env var, so shell
+    commands never carry session identity. Trellis's own bundled scripts run
+    under this platform when the install is kerminal-only — detected by the
+    absence of any hook-capable platform's config directory. On such installs
+    the sole-session fallback is safe: there is no second window that could
+    own a different session file, because no host provides per-window keys.
+    """
+    repo_root = _find_repo_root_from_cwd()
+    if repo_root is None:
+        return False
+    for config_dir in _HOOK_PLATFORM_CONFIG_DIRS:
+        if (repo_root / config_dir).is_dir():
+            return False
+    return True
+
+
+def _default_session_key() -> str:
+    """Return the stable fallback context key for a Kerminal-class install.
+
+    One key per install: a Kerminal session's "window" is the conversation the
+    agent is running in, which shell commands cannot see — but a single
+    project directory has exactly one active conversation at a time in
+    practice, so one pointer is correct.
+    """
+    return "kerminal_default"
+
+
 def resolve_active_task(
     repo_root: Path,
     platform_input: dict[str, Any] | None = None,
     platform: str | None = None,
     *,
-    allow_single_session_fallback: bool = False,
+    allow_single_session_fallback: bool | None = None,
     allow_environment_context: bool = True,
 ) -> ActiveTask:
     """Resolve the active task from session runtime state only.
@@ -658,7 +718,15 @@ def resolve_active_task(
     Missing or unmatched session identity does not infer ownership from the
     number of session files. Pull-based child-agent callers that cannot inherit
     a parent identity must opt into the compatibility fallback explicitly.
+
+    ``allow_single_session_fallback=None`` (the default) auto-detects: the
+    fallback fires only on Kerminal-class pull-based installs (no hook bridge,
+    no platform session env var — see ``_is_single_session_platform``), where
+    the sole session file *is* the whole session. Hook-capable platforms keep
+    the strict default so multi-window isolation is preserved.
     """
+    if allow_single_session_fallback is None:
+        allow_single_session_fallback = _is_single_session_platform()
     context_key = resolve_context_key(
         platform_input,
         platform,
@@ -682,9 +750,11 @@ def resolve_active_task(
 def _resolve_single_session_fallback(repo_root: Path) -> ActiveTask | None:
     """Return the task pointed at by the sole session file, if exactly one exists.
 
-    Used when context-key resolution fails (typical for class-2 platform
-    sub-agents). Returns None if 0 or ≥2 session files are present — refuses
-    to pick across windows so 04-21's multi-session isolation contract holds.
+    Used when context-key resolution fails. On Kerminal-class pull-based
+    installs this is the normal path (the shell never carries session
+    identity), so the sole session file *is* the active session. Returns None
+    if 0 or ≥2 session files are present — refuses to pick across windows so
+    04-21's multi-session isolation contract holds.
     """
     sessions_dir = _runtime_sessions_dir(repo_root)
     if not sessions_dir.is_dir():

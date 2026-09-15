@@ -428,13 +428,16 @@ describe("resolvePlaceholders", () => {
 // ---------------------------------------------------------------------------
 
 describe("resolvePlaceholdersNeutral", () => {
-  it("renders {{CMD_REF:name}} as `name` (Trellis command) — platform-neutral", () => {
+  it("renders {{CMD_REF:name}} as name (Trellis skill) — platform-neutral, backtick-safe", () => {
+    // Templates wrap the placeholder in their own backticks
+    // (`{{CMD_REF:brainstorm}}`), so the neutral form must carry no backticks
+    // of its own — otherwise markdown renders as malformed nested code.
     expect(
-      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", kerminalCtx),
-    ).toBe("See `brainstorm` (Trellis command)");
+      resolvePlaceholdersNeutral("See `{{CMD_REF:brainstorm}}`", kerminalCtx),
+    ).toBe("See `brainstorm (Trellis skill)`");
     expect(
-      resolvePlaceholdersNeutral("See {{CMD_REF:brainstorm}}", hooksCtx),
-    ).toBe("See `brainstorm` (Trellis command)");
+      resolvePlaceholdersNeutral("See `{{CMD_REF:brainstorm}}`", hooksCtx),
+    ).toBe("See `brainstorm (Trellis skill)`");
   });
 
   it("produces byte-identical CMD_REF output across contexts", () => {

@@ -619,7 +619,7 @@ branch that owns distributable templates. A feature can be documented as bundled
 while the published npm tarball still lacks the files.
 
 ```bash
-pnpm --filter @zhiwenliu/trellis build
+pnpm --filter trellis-kerminal build
 
 cd packages/cli
 npm pack --dry-run --json | grep 'dist/templates/common/bundled-skills/<skill>/SKILL.md'

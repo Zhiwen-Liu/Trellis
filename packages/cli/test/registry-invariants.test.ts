@@ -121,7 +121,7 @@ describe("every platform resolves to a marker label workflow.md uses", () => {
       `content = open(${JSON.stringify(workflowPath)}, encoding="utf-8").read()`,
       "out = {}",
       "for flag in json.loads(sys.argv[1]):",
-      "    rendered = filter_platform(content, resolve_effective_platform(flag, {}))",
+      "    rendered = filter_platform(content, resolve_effective_platform(flag))",
       // Keep the assertion structural: count bullets surviving inside the
       // routing section rather than matching its prose, which is edited often.
       "    section = rendered.split('### Active Task Routing', 1)",

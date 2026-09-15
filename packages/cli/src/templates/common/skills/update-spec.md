@@ -329,9 +329,9 @@ Before finishing your code-spec update:
 
 ```
 Development Flow:
-  Learn something → {{CMD_REF:update-spec}} → Knowledge captured
+  Learn something → `{{CMD_REF:update-spec}}` → Knowledge captured
        ↑                                  ↓
-  {{CMD_REF:break-loop}} ←──────────────────── Future sessions benefit
+  `{{CMD_REF:break-loop}}` ←──────────────────── Future sessions benefit
   (deep bug analysis)
 ```
 

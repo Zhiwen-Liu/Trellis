@@ -233,10 +233,12 @@ def cmd_start(args: argparse.Namespace) -> int:
     task_json_path = full_path / FILE_TASK_JSON
 
     if not resolve_context_key():
-        # Degraded mode: no session identity available.
-        # Hook didn't inject TRELLIS_CONTEXT_ID (common on Windows + Claude Code,
-        # --continue resume path, fork distribution, hooks disabled, etc.). Skip
-        # per-session pointer write; AI continues based on conversation context.
+        # Degraded mode: no session identity available (a Kerminal-class
+        # install resolves one through the kerminal_default fallback, so this
+        # branch now only fires on hook-capable platforms whose bridge didn't
+        # run — hook didn't inject TRELLIS_CONTEXT_ID, hooks disabled, etc.).
+        # Skip per-session pointer write; AI continues based on conversation
+        # context.
         print(colored(
             "ℹ Session identity not available; active-task pointer not persisted "
             "this session (degraded mode). AI continues based on conversation context.",

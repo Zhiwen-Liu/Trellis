@@ -43,7 +43,6 @@ import {
 
 export interface WorkflowCommandOptions {
   template?: string;
-  marketplace?: string;
   list?: boolean;
   force?: boolean;
   createNew?: boolean;
@@ -250,13 +249,8 @@ export async function runWorkflowCommand(
 
   // List mode — print and exit.
   if (options.list) {
-    const { templates, errorMessage } = await listWorkflowTemplates({
-      source: options.marketplace,
-    });
+    const { templates } = await listWorkflowTemplates();
     printListing(templates);
-    if (errorMessage) {
-      console.log(chalk.yellow(`⚠ ${errorMessage}`));
-    }
     return;
   }
 
@@ -268,12 +262,7 @@ export async function runWorkflowCommand(
         "No --template specified and stdin is not a TTY. Pass --template <id> or run interactively.",
       );
     }
-    const { templates, errorMessage } = await listWorkflowTemplates({
-      source: options.marketplace,
-    });
-    if (errorMessage) {
-      console.log(chalk.yellow(`⚠ ${errorMessage}`));
-    }
+    const { templates } = await listWorkflowTemplates();
     const picked = await chooseTemplateInteractively(templates);
     if (!picked) {
       throw new WorkflowCommandError("No workflow template available.");
@@ -284,9 +273,7 @@ export async function runWorkflowCommand(
   // Resolve content.
   let template: ResolvedWorkflowTemplate;
   try {
-    template = await resolveWorkflowTemplate(templateId, {
-      source: options.marketplace,
-    });
+    template = await resolveWorkflowTemplate(templateId);
   } catch (err) {
     if (err instanceof WorkflowResolveError) {
       throw new WorkflowCommandError(err.message);

@@ -16,6 +16,12 @@ import {
   collectCodexTurnsAndEvents,
 } from "./adapters/codex.js";
 import {
+  collectKerminalTurnsAndEvents,
+  kerminalExtractDialogue,
+  kerminalListSessions,
+  kerminalSearch,
+} from "./adapters/kerminal.js";
+import {
   collectDevinTurnsAndEvents,
   devinExtractDialogue,
   devinListSessions,
@@ -89,6 +95,13 @@ export const MEM_PLATFORMS: Record<MemSourceKind, MemPlatformAdapter> = {
     extract: (s, warnings) => codexExtractDialogue(s, warnings),
     search: (s, kw) => codexSearch(s, kw),
     collect: (s, warnings) => collectCodexTurnsAndEvents(s, warnings),
+  },
+  kerminal: {
+    phaseSupported: true,
+    list: (f) => kerminalListSessions(f),
+    extract: (s, warnings) => kerminalExtractDialogue(s, warnings),
+    search: (s, kw) => kerminalSearch(s, kw),
+    collect: (s, warnings) => collectKerminalTurnsAndEvents(s, warnings),
   },
   grok: {
     phaseSupported: true,

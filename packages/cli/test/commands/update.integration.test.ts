@@ -26,27 +26,11 @@ vi.mock("node:child_process", () => ({
     const py = process.platform === "win32" ? "python" : "python3";
     return cmd === `${py} --version` ? "Python 3.11.12" : "";
   }),
+  execFileSync: vi.fn().mockImplementation((cmd: string, args: string[]) => {
+    const py = process.platform === "win32" ? "python" : "python3";
+    return cmd === py && args?.[0] === "--version" ? "Python 3.11.12" : "";
+  }),
 }));
-
-const registryDownload = vi.hoisted(() => ({
-  files: new Map<string, string>(),
-}));
-
-vi.mock("giget", async () => {
-  const fs = await import("node:fs");
-  const path = await import("node:path");
-  return {
-    downloadTemplate: vi.fn(
-      async (_source: string, options: { dir: string }) => {
-        for (const [relativePath, content] of registryDownload.files) {
-          const targetPath = path.join(options.dir, relativePath);
-          fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-          fs.writeFileSync(targetPath, content, "utf-8");
-        }
-      },
-    ),
-  };
-});
 
 // === Imports ===
 
@@ -160,7 +144,6 @@ describe("update() integration", () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "trellis-update-int-"));
     vi.spyOn(process, "cwd").mockReturnValue(tmpDir);
-    registryDownload.files.clear();
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const noop = () => {};
     vi.spyOn(console, "log").mockImplementation(noop);
@@ -585,14 +568,6 @@ describe("update() integration", () => {
     // auto-updated to the current packaged template.
     expect(readProjectFile(PATHS.WORKFLOW_GUIDE_FILE)).toBe(expectedWorkflow);
     expect(readProjectFile(MANAGED_FILE)).toBe(expectedGetContext);
-    // Prefix, not the whole marker: the inline block gains members as
-    // sub-agent-less platforms are added, and this assertion is about the
-    // block surviving the update, not about who is currently in it.
-    expect(readProjectFile(PATHS.WORKFLOW_GUIDE_FILE)).toContain(
-      "[codex-inline, Kilo, Antigravity, Devin",
-    );
-    expect(readProjectFile(PATHS.WORKFLOW_GUIDE_FILE)).not.toContain("[Codex]");
-
     // Version-specific additive config sections still apply to a user-modified
     // config.yaml, while preserving the local content around the append.
     const updatedConfig = readProjectFile(`${DIR_NAMES.WORKFLOW}/config.yaml`);
@@ -642,131 +617,6 @@ describe("update() integration", () => {
 
     // spec/ directory should NOT be recreated by update
     expect(fs.existsSync(specDir)).toBe(false);
-  });
-
-  it("#14b registry-backed pristine spec is refreshed by update", async () => {
-    await setupProject();
-
-    const specFile = `${PATHS.SPEC}/index.md`;
-    writeProjectFile(specFile, "# remote spec v1\n");
-    writeProjectFile(
-      `${DIR_NAMES.WORKFLOW}/config.yaml`,
-      `${readProjectFile(`${DIR_NAMES.WORKFLOW}/config.yaml`)}\nregistry:\n  spec:\n    source: gitlab:local/registry/spec\n`,
-    );
-    const hashes = readHashesV2(hashFilePath());
-    hashes[specFile] = computeHash("# remote spec v1\n");
-    writeHashesV2(hashFilePath(), hashes);
-
-    registryDownload.files.set("index.md", "# remote spec v2\n");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation((input: string | URL) => {
-        const url = String(input);
-        if (url.includes("registry.npmjs.org")) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ version: VERSION }),
-          });
-        }
-        return Promise.resolve({ status: 404, ok: false });
-      }),
-    );
-
-    await update({ force: true });
-
-    expect(readProjectFile(specFile)).toBe("# remote spec v2\n");
-    expect(readHashesV2(hashFilePath())[specFile]).toBe(
-      computeHash("# remote spec v2\n"),
-    );
-    expect(readProjectFile(`${DIR_NAMES.WORKFLOW}/config.yaml`)).toContain(
-      "source: gitlab:local/registry/spec",
-    );
-  });
-
-  it("#14c registry-backed user-modified spec is preserved under skipAll", async () => {
-    await setupProject();
-
-    const specFile = `${PATHS.SPEC}/index.md`;
-    writeProjectFile(specFile, "# local edits\n");
-    writeProjectFile(
-      `${DIR_NAMES.WORKFLOW}/config.yaml`,
-      `${readProjectFile(`${DIR_NAMES.WORKFLOW}/config.yaml`)}\nregistry:\n  spec:\n    source: gitlab:local/registry/spec\n`,
-    );
-    const hashes = readHashesV2(hashFilePath());
-    hashes[specFile] = computeHash("# remote spec v1\n");
-    writeHashesV2(hashFilePath(), hashes);
-
-    registryDownload.files.set("index.md", "# remote spec v2\n");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation((input: string | URL) => {
-        const url = String(input);
-        if (url.includes("registry.npmjs.org")) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ version: VERSION }),
-          });
-        }
-        return Promise.resolve({ status: 404, ok: false });
-      }),
-    );
-
-    await update({ skipAll: true });
-
-    expect(readProjectFile(specFile)).toBe("# local edits\n");
-    expect(readHashesV2(hashFilePath())[specFile]).toBe(
-      computeHash("# remote spec v1\n"),
-    );
-  });
-
-  it("#14d registry-backed marketplace template spec is refreshed by update", async () => {
-    await setupProject();
-
-    const specFile = `${PATHS.SPEC}/index.md`;
-    writeProjectFile(specFile, "# golang spec v1\n");
-    writeProjectFile(
-      `${DIR_NAMES.WORKFLOW}/config.yaml`,
-      `${readProjectFile(`${DIR_NAMES.WORKFLOW}/config.yaml`)}\nregistry:\n  spec:\n    source: gitlab:local/registry/marketplace\n    template: golang-spec\n`,
-    );
-    const hashes = readHashesV2(hashFilePath());
-    hashes[specFile] = computeHash("# golang spec v1\n");
-    writeHashesV2(hashFilePath(), hashes);
-
-    registryDownload.files.set("index.md", "# golang spec v2\n");
-    const index = JSON.stringify({
-      version: 1,
-      templates: [
-        {
-          id: "golang-spec",
-          type: "spec",
-          name: "Golang",
-          path: "backend",
-        },
-      ],
-    });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation((input: string | URL) => {
-        const url = String(input);
-        if (url.includes("registry.npmjs.org")) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ version: VERSION }),
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          text: () => Promise.resolve(index),
-        });
-      }),
-    );
-
-    await update({ force: true });
-
-    expect(readProjectFile(specFile)).toBe("# golang spec v2\n");
-    expect(readHashesV2(hashFilePath())[specFile]).toBe(
-      computeHash("# golang spec v2\n"),
-    );
   });
 
   it("#15 truly new file (no stored hash) is still added", async () => {
@@ -1198,13 +1048,7 @@ describe("update() integration", () => {
 
     const updated = fs.readFileSync(workflowPath, "utf-8");
     expect(updated).toBe(replacePythonCommandLiterals(workflowMdTemplate));
-    expect(updated).toContain(
-      "[Gemini, Qoder, Copilot, Reasonix, Trae, Grok, Kimi Code]",
-    );
-    expect(updated).toContain(
-      "[/Claude Code, Cursor, OpenCode, codex-sub-agent, CodeBuddy, Droid, Pi, ZCode, Snow, Oh My Pi]",
-    );
-    expect(updated).toContain("[codex-inline, Kilo, Antigravity, Devin");
+    expect(updated).toContain("[Kerminal]");
     expect(updated).not.toContain("[Codex]");
     expect(updated).not.toContain("[Kilo, Antigravity, Windsurf]");
     expect(updated).not.toContain("legacy body");

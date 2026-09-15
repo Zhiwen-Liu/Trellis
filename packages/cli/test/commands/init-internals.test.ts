@@ -1,8 +1,8 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
 import {
@@ -33,7 +33,7 @@ describe("isSupportedPythonVersion", () => {
 
 describe("requireSupportedPython", () => {
   beforeEach(() => {
-    vi.mocked(execSync).mockReset();
+    vi.mocked(execFileSync).mockReset();
   });
 
   afterEach(() => {
@@ -41,18 +41,18 @@ describe("requireSupportedPython", () => {
   });
 
   it("returns the detected version when it is supported", () => {
-    vi.mocked(execSync).mockReturnValue("Python 3.11.12");
+    vi.mocked(execFileSync).mockReturnValue("Python 3.11.12");
 
     expect(requireSupportedPython("python3")).toBe("Python 3.11.12");
 
-    expect(execSync).toHaveBeenCalledWith("python3 --version", {
+    expect(execFileSync).toHaveBeenCalledWith("python3", ["--version"], {
       encoding: "utf-8",
       stdio: "pipe",
     });
   });
 
   it("throws when the detected version is below the supported floor", () => {
-    vi.mocked(execSync).mockReturnValue("Python 3.8.18");
+    vi.mocked(execFileSync).mockReturnValue("Python 3.8.18");
 
     expect(() => requireSupportedPython("python3")).toThrow(
       'Python 3.8.18 detected via "python3", but Trellis init requires Python ≥ 3.9.',
@@ -60,7 +60,7 @@ describe("requireSupportedPython", () => {
   });
 
   it("throws when the command is missing", () => {
-    vi.mocked(execSync).mockImplementation(() => {
+    vi.mocked(execFileSync).mockImplementation(() => {
       throw new Error("command not found");
     });
 
@@ -71,7 +71,7 @@ describe("requireSupportedPython", () => {
 
   it("warns and proceeds when child_process spawn is sandbox-restricted (EPERM)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.mocked(execSync).mockImplementation(() => {
+    vi.mocked(execFileSync).mockImplementation(() => {
       const err = new Error("Operation not permitted") as NodeJS.ErrnoException;
       err.code = "EPERM";
       throw err;
@@ -87,7 +87,7 @@ describe("requireSupportedPython", () => {
 
   it("treats EACCES the same as EPERM (sandbox-restricted)", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.mocked(execSync).mockImplementation(() => {
+    vi.mocked(execFileSync).mockImplementation(() => {
       const err = new Error("Permission denied") as NodeJS.ErrnoException;
       err.code = "EACCES";
       throw err;
@@ -102,10 +102,10 @@ describe("requireSupportedPython", () => {
     const prev = process.env.TRELLIS_SKIP_PYTHON_CHECK;
     process.env.TRELLIS_SKIP_PYTHON_CHECK = "1";
     try {
-      // execSync should not be called at all
+      // execFileSync should not be called at all
       const result = requireSupportedPython("python3");
       expect(result).toBe("version check skipped (TRELLIS_SKIP_PYTHON_CHECK=1)");
-      expect(execSync).not.toHaveBeenCalled();
+      expect(execFileSync).not.toHaveBeenCalled();
     } finally {
       if (prev === undefined) {
         delete process.env.TRELLIS_SKIP_PYTHON_CHECK;
@@ -122,7 +122,7 @@ describe("requireSupportedPython", () => {
 
 describe("resolveSupportedPython", () => {
   beforeEach(() => {
-    vi.mocked(execSync).mockReset();
+    vi.mocked(execFileSync).mockReset();
     resetResolvedPythonCommand();
     delete process.env.TRELLIS_PYTHON_CMD;
     delete process.env.TRELLIS_SKIP_PYTHON_CHECK;
@@ -137,7 +137,7 @@ describe("resolveSupportedPython", () => {
 
   it("returns the first candidate that probes a supported version", () => {
     // Whatever platform we're on, the FIRST candidate in the chain must work.
-    vi.mocked(execSync).mockReturnValue("Python 3.11.12");
+    vi.mocked(execFileSync).mockReturnValue("Python 3.11.12");
 
     const result = resolveSupportedPython();
     expect(result.version).toBe("Python 3.11.12");
@@ -149,10 +149,10 @@ describe("resolveSupportedPython", () => {
   it("falls back to a later candidate when earlier ones fail (#236)", () => {
     // Simulate the #236 scenario on every platform: only "python3" works,
     // "python" returns "command not found", "py -3" returns nothing useful.
-    vi.mocked(execSync).mockImplementation(((cmd: string) => {
-      if (cmd === "python3 --version") return "Python 3.11.12";
+    vi.mocked(execFileSync).mockImplementation(((cmd: string, args: string[]) => {
+      if (cmd === "python3" && args?.[0] === "--version") return "Python 3.11.12";
       throw new Error("command not found");
-    }) as typeof execSync);
+    }) as typeof execFileSync);
 
     const result = resolveSupportedPython();
     expect(result.command).toBe("python3");
@@ -160,12 +160,12 @@ describe("resolveSupportedPython", () => {
   });
 
   it("throws an aggregated error listing all probe failures", () => {
-    vi.mocked(execSync).mockImplementation(((cmd: string) => {
-      if (cmd.endsWith("--version")) {
+    vi.mocked(execFileSync).mockImplementation(((cmd: string, args: string[]) => {
+      if (args?.[0] === "--version") {
         throw new Error("command not found");
       }
       return "";
-    }) as typeof execSync);
+    }) as typeof execFileSync);
 
     expect(() => resolveSupportedPython()).toThrow(
       /No supported Python command found/,
@@ -178,7 +178,7 @@ describe("resolveSupportedPython", () => {
 
     const result = resolveSupportedPython();
     expect(result.command).toBe("py -3.12");
-    expect(execSync).not.toHaveBeenCalled();
+    expect(execFileSync).not.toHaveBeenCalled();
     expect(getPythonCommandForPlatform()).toBe("py -3.12");
   });
 
@@ -187,7 +187,7 @@ describe("resolveSupportedPython", () => {
 
     const result = resolveSupportedPython();
     // Should return the platform default without probing.
-    expect(execSync).not.toHaveBeenCalled();
+    expect(execFileSync).not.toHaveBeenCalled();
     expect(result.command).toBe(
       process.platform === "win32" ? "python" : "python3",
     );
@@ -195,7 +195,7 @@ describe("resolveSupportedPython", () => {
 
   it("treats sandbox-restricted EPERM as success — assumes first candidate is on PATH", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.mocked(execSync).mockImplementation(() => {
+    vi.mocked(execFileSync).mockImplementation(() => {
       const err = new Error("Operation not permitted") as NodeJS.ErrnoException;
       err.code = "EPERM";
       throw err;

@@ -1,6 +1,6 @@
 # Bundled Skills
 
-"Bundled skills" are multi-file built-in skills shipped inside the Trellis CLI npm package. Unlike marketplace skills (which a user installs separately into their own `.claude/skills/` or other platform skill root), bundled skills are written automatically into every supported platform's skill root by `trellis init` and kept in sync by `trellis update`. They are part of Trellis itself, not third-party content.
+"Bundled skills" are multi-file built-in skills shipped inside the Trellis CLI npm package. Unlike user-installed skills (which a user adds separately into their own skill root), bundled skills are written automatically into every supported platform's skill root by `trellis init` and kept in sync by `trellis update`. They are part of Trellis itself, not third-party content.
 
 A bundled skill is a directory under `packages/cli/src/templates/common/bundled-skills/<skill>/` that already contains its own `SKILL.md` (with YAML frontmatter) plus optional `references/`, assets, or other supporting files. Trellis copies the whole directory tree as-is into each platform's skill root, so references stay lazy-loadable instead of being flattened into one oversized `SKILL.md`.
 
@@ -12,7 +12,7 @@ A bundled skill is a directory under `packages/cli/src/templates/common/bundled-
 | `templates/common/skills/<name>.md` | Single-file workflow skill | Wrapped with frontmatter, written as `<root>/<name>/SKILL.md` |
 | `templates/common/commands/<name>.md` | Slash command / prompt | Written to each platform's command directory (`.claude/commands/trellis/`, `.cursor/commands/trellis-*.md`, `.gemini/commands/trellis/*.toml`, etc.) |
 | `templates/<platform>/skills/` | Platform-specific skill | Written only into that platform's directory (e.g. `.codex/skills/`) |
-| User skills under `.claude/skills/<my-skill>/` etc. | Marketplace or user-authored | Not managed by Trellis at all |
+| User skills under the platform skill root | User-authored or third-party | Not managed by Trellis at all |
 
 The Trellis CLI never touches anything that is not produced by one of its own template loaders. Anything a user drops into a platform skill root by hand is left alone.
 
@@ -138,8 +138,8 @@ Caveats:
 
 - The override only applies to the one platform whose directory you edited. To override the same skill across, for example, Claude Code and Codex, you must edit both `.claude/skills/<name>/` and `.agents/skills/<name>/`.
 - A future `trellis update --force` will overwrite local edits. Keep the override under version control so it can be reapplied if needed.
-- Marketplace skills installed under the same platform skill root with a different folder name (e.g. `.claude/skills/my-custom-meta/`) are untouched by Trellis and are the cleaner option when the goal is to add behavior, not to mutate the bundled skill.
-- Team-private conventions belong in `.trellis/spec/` or in a separate marketplace-style local skill, not in modifications to `trellis-meta` itself. See `customize-local/add-project-local-conventions.md`.
+- Third-party skills installed under the same skill root with a different folder name are untouched by Trellis and are the cleaner option when the goal is to add behavior, not to mutate the bundled skill.
+- Team-private conventions belong in `.trellis/spec/` or in a separate project-local skill, not in modifications to `trellis-meta` itself. See `customize-local/add-project-local-conventions.md`.
 
 ## Removing a Bundled Skill From a Project
 

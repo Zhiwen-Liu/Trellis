@@ -29,7 +29,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 | [`tl mem` Command](./commands-mem.md) | Cross-platform AI session memory: subcommands, schemas, indexing, cleaning pipeline, search relevance | Done |
 | [`trellis upgrade` Command](./commands-upgrade.md) | Global CLI self-upgrade wrapper: channel inference, npm invocation, failure behavior | Done |
 | [`trellis update` Command](./commands-update.md) | Update pipeline: flags, plan composition, migration trigger semantics, apply phase, idempotency, boundaries with `migrations.md` | Done |
-| [`trellis workflow` Command](./commands-workflow.md) | Workflow marketplace templates, project-local workflow switching, hash ownership contract, and parser compatibility | Done |
+| [`trellis workflow` Command](./commands-workflow.md) | Bundled native workflow switcher, hash ownership contract, and parser compatibility | Done |
 | [`trellis platforms` Command](./commands-platforms.md) | Machine-readable report of configured AI platforms: `--json` shape, registry sourcing, failure behavior | Done |
 | [`trellis uninstall` Command](./commands-uninstall.md) | Uninstall orchestration: plan composition, structured-file dispatch, execute phases, `.trellis/` removal | Done |
 | [`trellis ablate` / `restore` Commands](./commands-ablate.md) | Reversible full project subtraction, external transactions, conflict-safe exact restore | Done |
@@ -56,7 +56,7 @@ Before writing backend code, read the relevant guidelines based on your task:
 - Editing `commands/mem.ts` (subcommands, platform indexers, search/cleaning pipeline) → [commands-mem.md](./commands-mem.md)
 - Editing `commands/upgrade.ts` (global CLI self-upgrade behavior) → [commands-upgrade.md](./commands-upgrade.md)
 - Editing `commands/update.ts` (flags, plan, apply phases, idempotency) → [commands-update.md](./commands-update.md) — manifest mechanics still in [migrations.md](./migrations.md)
-- Editing `commands/workflow.ts`, `utils/workflow-resolver.ts`, workflow marketplace entries, or `init --workflow` behavior → [commands-workflow.md](./commands-workflow.md)
+- Editing `commands/workflow.ts`, `utils/workflow-resolver.ts`, or workflow template/hash behavior → [commands-workflow.md](./commands-workflow.md)
 - Editing the `platforms` subcommand in `cli/index.ts` → [commands-platforms.md](./commands-platforms.md)
 - Editing `commands/uninstall.ts` or `utils/uninstall-scrubbers.ts` → [commands-uninstall.md](./commands-uninstall.md) + [uninstall-scrubbers.md](./uninstall-scrubbers.md)
 - Editing `commands/ablate.ts` or `utils/ablation-store.ts` → [commands-ablate.md](./commands-ablate.md) + [filesystem-safety.md](./filesystem-safety.md)

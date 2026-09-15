@@ -21,6 +21,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 18 is the minimum supported by packages/cli engines (>=18.17.0)
+        node-version: ["18", "20"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup minimum supported Python
         uses: actions/setup-python@v7

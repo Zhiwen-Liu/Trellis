@@ -82,7 +82,7 @@ cd packages/cli && pnpm link --global   # 提供 `trellis`（别名 `tl`）
 1. **用自然语言描述你的需求。**
 2. **与 AI 一起头脑风暴**，一次只回答一个问题，直到 PRD 足够清晰，然后开始实现。
 3. **交由 AI 自主推进** —— AI 会调用 `trellis-implement` 编写代码，并自动依据 Spec、lint、type-check 与测试进行校验。
-4. **当工作完成或会话上下文接近上限时，输入 `/trellis:finish-work`**。Trellis 会归档任务并更新工作日志。
+4. **让 agent 执行 finish the trellis task**：当工作完成或会话上下文接近上限时（Kerminal 没有 slash palette，`/trellis:finish-work` 会变成普通请求）。Trellis 会归档任务并更新工作日志。
 
 ## 工作原理
 
@@ -112,14 +112,14 @@ Trellis 内部运行一个 4 阶段循环，skill 与子代理均由系统自动
 <details>
 <summary><strong>Trellis 是否仅支持 Claude Code？</strong></summary>
 
-并非如此。Trellis 是项目层基础设施，可在多种 coding agent 与 IDE 中使用。
+TrellisKerminal 仅支持 [Kerminal](https://kerminal.cn/) 这一个平台。上游 Trellis 曾支持 23 个平台；本发行版只发布 `trellis-kerminal` 一个 npm 包。
 
 </details>
 
 <details>
 <summary><strong>Trellis 适合个人开发者还是团队？</strong></summary>
 
-两者皆可。个人开发者主要受益于记忆机制与可复用的工作流；团队使用收益更大——标准统一、任务边界清晰、上下文可审查，且具备跨平台可移植性。
+两者皆可。个人开发者主要受益于记忆机制与可复用的工作流；团队使用收益更大——标准统一、任务边界清晰、上下文可审查。
 
 </details>
 

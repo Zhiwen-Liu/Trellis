@@ -447,7 +447,7 @@ function cmdExtract(argv: Argv): void {
 }
 
 function cmdHelp(): void {
-  console.log(`trellis mem — list/search Claude/Codex/Devin/Grok/OpenCode/Pi/ZCode sessions
+  console.log(`trellis mem — list/search Kerminal/Claude/Codex/Devin/Grok/OpenCode/Pi/ZCode sessions
 
 commands:
   list                          list sessions (default if no command)
@@ -468,7 +468,7 @@ flags:
   --grep KW                              extract / context: filter turns by keyword (multi-token AND)
   --phase brainstorm|implement|all       extract: slice by Trellis brainstorm windows
                                          (default all; brainstorm = [task.py create, task.py start);
-                                         Claude/Codex/Devin/Grok/Pi/ZCode supported; OpenCode warns + returns all)
+                                         Kerminal/Claude/Codex/Devin/Grok/Pi/ZCode supported; OpenCode warns + returns all)
   --turns N                              context: number of hit turns to return (default 3)
   --around N                             context: turns of surrounding context per hit (default 1)
   --max-chars N                          context: total char budget (default 6000, ~1500 tokens)

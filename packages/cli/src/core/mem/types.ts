@@ -12,6 +12,7 @@ export const MEM_SOURCE_KINDS = [
   "codex",
   "devin",
   "grok",
+  "kerminal",
   "opencode",
   "pi",
   "zcode",

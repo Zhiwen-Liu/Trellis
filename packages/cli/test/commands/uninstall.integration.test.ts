@@ -24,6 +24,10 @@ vi.mock("node:child_process", () => ({
     const py = process.platform === "win32" ? "python" : "python3";
     return cmd === `${py} --version` ? "Python 3.11.12" : "";
   }),
+  execFileSync: vi.fn().mockImplementation((cmd: string, args: string[]) => {
+    const py = process.platform === "win32" ? "python" : "python3";
+    return cmd === py && args?.[0] === "--version" ? "Python 3.11.12" : "";
+  }),
 }));
 
 import { init } from "../../src/commands/init.js";

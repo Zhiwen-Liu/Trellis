@@ -17,6 +17,10 @@ vi.mock("node:child_process", () => ({
     const python = process.platform === "win32" ? "python" : "python3";
     return cmd === `${python} --version` ? "Python 3.11.12" : "";
   }),
+  execFileSync: vi.fn().mockImplementation((cmd: string, args: string[]) => {
+    const python = process.platform === "win32" ? "python" : "python3";
+    return cmd === python && args?.[0] === "--version" ? "Python 3.11.12" : "";
+  }),
 }));
 
 import { ablate, restore } from "../../src/commands/ablate.js";

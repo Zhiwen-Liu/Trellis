@@ -31,27 +31,11 @@ export type CliFlag = "kerminal";
  */
 export interface TemplateContext {
   /** Prefix for cross-referencing other commands/skills */
-  cmdRefPrefix:
-    | "/trellis:"
-    | "/trellis-"
-    | "$"
-    | "/"
-    | "/skill trellis-"
-    | "/skill:trellis-"
-    | "trellis-";
+  cmdRefPrefix: "trellis-";
   /** Description of AI executor actions shown in role tables */
-  executorAI:
-    | "Bash scripts or Task calls"
-    | "Bash scripts or tool calls"
-    | "Bash scripts or Agent calls"
-    | "Bash scripts or file reads";
+  executorAI: "Bash scripts or tool calls";
   /** Label for user-invocable actions */
-  userActionLabel:
-    | "Slash commands"
-    | "Skills"
-    | "Workflows"
-    | "Prompts"
-    | "Commands";
+  userActionLabel: "Skills";
   /** Platform supports spawning sub-agents with isolated context */
   agentCapable: boolean;
   /** Platform has hook system (SessionStart, PreToolUse) */

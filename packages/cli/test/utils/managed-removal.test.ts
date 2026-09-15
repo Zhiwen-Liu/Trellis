@@ -77,15 +77,15 @@ describe("managed-removal strict planning", () => {
   );
 
   it("fails closed when a malformed mixed file cannot be scrubbed", () => {
-    fs.mkdirSync(path.join(tmpDir, ".codex"));
-    fs.writeFileSync(path.join(tmpDir, ".codex", "hooks.json"), "{broken");
+    fs.writeFileSync(
+      path.join(tmpDir, "AGENTS.md"),
+      "<!-- TRELLIS:START -->\nmanaged without end marker\n",
+    );
 
     expect(() =>
-      buildManagedRemovalPlan(
-        tmpDir,
-        { ".codex/hooks.json": "hash" },
-        { strictPaths: true },
-      ),
+      buildManagedRemovalPlan(tmpDir, { "AGENTS.md": "hash" }, {
+        strictPaths: true,
+      }),
     ).toThrow(/Cannot prove Trellis content was removed/);
   });
 });
