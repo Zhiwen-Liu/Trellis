@@ -70,10 +70,14 @@ For every POSIX path in `hashes`:
 `removeTrellisDir` is set to `true` unconditionally — by the time
 `buildManagedRemovalPlan` runs, we have already verified `.trellis/` exists.
 
-The shared planner also supports `strictPaths: true` for reversible ablation.
-`uninstall` deliberately uses the default compatibility mode so this extraction
-does not change its established best-effort behavior; strict containment,
-leaf-symlink, and malformed-mixed-file refusal belong to `trellis ablate`.
+The shared planner also supports a `strictPaths: true` mode, which enforces
+strict containment of every managed path inside the project root (a parent
+symlink resolving outside is refused), treats a leaf symlink as an opaque
+deletion target rather than dereferencing it, and fails closed when a
+structured file's scrub cannot provably remove Trellis content (malformed
+mixed file). `uninstall` is currently the planner's only caller and
+deliberately runs it in the default compatibility mode, keeping its
+established best-effort behavior unchanged.
 
 ### Structured-file dispatch table — `utils/managed-removal.ts:buildStructuredFileSpecs`
 

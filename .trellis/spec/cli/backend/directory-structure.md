@@ -23,16 +23,16 @@ packages/cli/            # trellis-kerminal: the only publishable package
 │   ├── cli/             # CLI entry point and argument parsing
 │   │   └── index.ts     # Main CLI entry (Commander.js setup)
 │   ├── core/            # Reusable domain APIs (formerly @zhiwenliu/trellis-core)
-│   │   ├── channel/     # channel/thread storage, reducers, event protocol helpers
 │   │   ├── task/        # reusable task record helpers
-│   │   ├── testing/     # test helpers intended for package consumers
-│   │   └── index.ts     # core root barrel (channel + task re-exports)
+│   │   ├── mem/         # persisted-session retrieval and search domain
+│   │   └── index.ts     # core root barrel (task re-exports)
 │   ├── commands/        # Command implementations (one file or folder per command)
 │   │   ├── init.ts
 │   │   ├── update.ts
 │   │   ├── uninstall.ts
 │   │   ├── mem.ts
-│   │   └── channel/     # Channel command renderers and CLI orchestration
+│   │   ├── upgrade.ts
+│   │   └── workflow.ts
 │   ├── configurators/
 │   ├── constants/
 │   ├── templates/
@@ -438,4 +438,3 @@ wholesale, and is a no-op if a `journal-*.md merge=union` rule already exists
 `add_session.py` prints a one-time-per-process warning (stderr, non-blocking)
 when it detects it is running inside a git worktree (not the main working
 tree) with `session_auto_commit` enabled, pointing back at this section.
-

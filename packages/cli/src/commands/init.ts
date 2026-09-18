@@ -1186,8 +1186,10 @@ export async function init(options: InitOptions): Promise<void> {
   if (explicitTools.length > 0) {
     // Explicit flags take precedence (works with or without -y)
     tools = explicitTools;
-  } else if (options.yes) {
-    // No explicit tools + -y: default to the registry default (Kerminal)
+  } else if (options.yes || TOOLS.length === 1) {
+    // No explicit tools + -y, or a single-platform registry (this
+    // distribution is Kerminal-only — there is nothing to choose): use the
+    // registry default (Kerminal) without prompting.
     tools = TOOLS.filter((t) => t.defaultChecked).map((t) => t.key);
   } else {
     // Interactive mode

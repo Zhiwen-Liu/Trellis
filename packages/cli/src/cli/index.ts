@@ -6,18 +6,14 @@ import { init } from "../commands/init.js";
 import { update } from "../commands/update.js";
 import { upgrade } from "../commands/upgrade.js";
 import { uninstall } from "../commands/uninstall.js";
-import { ablate, restore } from "../commands/ablate.js";
 import { runMem } from "../commands/mem.js";
 import {
   runWorkflowCommand,
   WorkflowCommandError,
 } from "../commands/workflow.js";
-import { registerChannelCommand } from "../commands/channel/index.js";
 import { DIR_NAMES } from "../constants/paths.js";
 import { PACKAGE_NAME, VERSION } from "../constants/version.js";
 import { compareVersions } from "../utils/compare-versions.js";
-import { getConfiguredPlatforms } from "../configurators/index.js";
-import { AI_TOOLS } from "../types/ai-tools.js";
 
 // Re-export for backwards compatibility (consumers should prefer constants/version.js)
 export { VERSION, PACKAGE_NAME };
@@ -69,7 +65,10 @@ program
 program
   .command("init")
   .description("Initialize trellis in the current project")
-  .option("--kerminal", "Include Kerminal skills (default)")
+  .option(
+    "--kerminal",
+    "Configure Kerminal (default; this distribution is Kerminal-only)",
+  )
   .option("-y, --yes", "Skip prompts and use defaults")
   .option(
     "-u, --user <name>",
@@ -177,54 +176,6 @@ program
   });
 
 program
-  .command("ablate")
-  .description(
-    "Temporarily remove all project Trellis surfaces with an external recovery transaction",
-  )
-  .option("-y, --yes", "Skip confirmation prompt")
-  .option("--dry-run", "Preview full ablation without changing files or state")
-  .action(async (options: Record<string, unknown>) => {
-    try {
-      await ablate({
-        yes: options.yes as boolean,
-        dryRun: options.dryRun as boolean,
-      });
-    } catch (error) {
-      console.error(
-        chalk.red("Error:"),
-        error instanceof Error ? error.message : error,
-      );
-      if (process.env.DEBUG || process.env.TRELLIS_DEBUG) {
-        console.error(error instanceof Error ? error.stack : error);
-      }
-      process.exit(1);
-    }
-  });
-
-program
-  .command("restore")
-  .description("Restore the exact project state saved by `trellis ablate`")
-  .option("-y, --yes", "Skip confirmation prompt")
-  .option("--dry-run", "Preview restoration and check conflicts")
-  .action(async (options: Record<string, unknown>) => {
-    try {
-      await restore({
-        yes: options.yes as boolean,
-        dryRun: options.dryRun as boolean,
-      });
-    } catch (error) {
-      console.error(
-        chalk.red("Error:"),
-        error instanceof Error ? error.message : error,
-      );
-      if (process.env.DEBUG || process.env.TRELLIS_DEBUG) {
-        console.error(error instanceof Error ? error.stack : error);
-      }
-      process.exit(1);
-    }
-  });
-
-program
   .command("mem")
   .description(
     "Search/recall AI conversation history (Kerminal, Claude Code, Codex, OpenCode, Pi, and more — run 'trellis mem help' for subcommands and flags)",
@@ -285,48 +236,5 @@ program
       process.exit(1);
     }
   });
-
-program
-  .command("platforms")
-  .description(
-    "Show which AI platforms are configured (active) in the current project",
-  )
-  .option("--json", "Output machine-readable JSON")
-  .action((options: Record<string, unknown>) => {
-    try {
-      const configured = getConfiguredPlatforms(cwd);
-      const platforms = [...configured].map((id) => ({
-        id,
-        displayName: AI_TOOLS[id].name,
-        configDir: AI_TOOLS[id].configDir,
-      }));
-
-      if (options.json) {
-        console.log(JSON.stringify({ platforms }, null, 2));
-        return;
-      }
-
-      if (platforms.length === 0) {
-        console.log(chalk.gray("No platforms configured in this project."));
-        return;
-      }
-
-      console.log(chalk.bold("Configured platforms:"));
-      for (const p of platforms) {
-        console.log(`  ${p.displayName} (${p.id}) — ${p.configDir}`);
-      }
-    } catch (error) {
-      console.error(
-        chalk.red("Error:"),
-        error instanceof Error ? error.message : error,
-      );
-      if (process.env.DEBUG || process.env.TRELLIS_DEBUG) {
-        console.error(error instanceof Error ? error.stack : error);
-      }
-      process.exit(1);
-    }
-  });
-
-registerChannelCommand(program);
 
 program.parse();

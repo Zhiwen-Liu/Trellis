@@ -1,7 +1,7 @@
 {
   "name": "trellis-kerminal",
   "version": "0.8.0",
-  "description": "TrellisKerminal — the Kerminal-only distribution of Trellis, an out-of-the-box engineering framework for AI coding (specs, tasks, and memory persisted in your repo)",
+  "description": "TrellisKerminal \u2014 the Kerminal-only distribution of Trellis, an out-of-the-box engineering framework for AI coding (specs, tasks, and memory persisted in your repo)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

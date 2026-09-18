@@ -1,5 +1,5 @@
 /**
- * Shared ownership-aware removal planning used by `uninstall` and `ablate`.
+ * Shared ownership-aware removal planning used by `uninstall`.
  *
  * The template hash manifest is the ownership boundary. This module deliberately
  * keeps planning pure with respect to mutations: it reads manifest-listed files,
@@ -51,7 +51,7 @@ export interface ManagedRemovalPlan {
 }
 
 export interface BuildManagedRemovalPlanOptions {
-  /** Strict path/symlink handling required by reversible ablation. */
+  /** Strict path/symlink handling used by uninstall's strict planning mode. */
   strictPaths?: boolean;
 }
 
@@ -148,9 +148,8 @@ export function assertSafeManagedPath(
 }
 
 /**
- * Build the one structured-file registry shared by permanent uninstall and
- * reversible ablation. Keep path ownership here; scrubber behavior remains in
- * `uninstall-scrubbers.ts`.
+ * Build the structured-file registry for uninstall. Keep path ownership
+ * here; scrubber behavior remains in `uninstall-scrubbers.ts`.
  */
 export function buildStructuredFileSpecs(): Map<string, StructuredFileSpec> {
   const specs: StructuredFileSpec[] = [
@@ -242,8 +241,7 @@ export function buildManagedRemovalPlan(
 }
 
 /**
- * Preserve the uninstall execution semantics after planner extraction. Ablate
- * uses the same plan but applies its own backup/rollback transaction around it.
+ * Preserve the uninstall execution semantics after planner extraction.
  */
 export function executeManagedRemovalPlan(
   cwd: string,

@@ -1,0 +1,106 @@
+{
+  "version": "0.8.1",
+  "description": "Kerminal-only pruning: init defaults to Kerminal without platform selection; channel runtime, ablate/restore, and platforms commands removed.",
+  "breaking": true,
+  "recommendMigrate": true,
+  "changelog": "**Kerminal-only focus release.** `trellis init` now configures Kerminal directly \u2014 no platform-selection prompt, no `--kerminal` flag required. Removed: `trellis channel` (multi-agent runtime dependent on external claude/codex CLIs), `trellis ablate`/`restore` (upstream demo feature \u2014 `uninstall` remains), and `trellis platforms` (single-platform distribution). Kerminal's built-in sub-agent dispatch (trellis-implement/check/research skills) is unaffected. ~27k lines removed.",
+  "migrations": [
+    {
+      "type": "safe-file-delete",
+      "from": ".trellis/agents/implement.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "66e25ad046c94869442834bc3cdfbd5a9a7412d3ff54561d64d2886552c27e87"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".trellis/agents/check.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "edb4f57361407249a53bf5998ebf91c40d2b969e826a2c5e1b4e813a08bcb175"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/SKILL.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "1785b1fe88bf406e169e392501a1536ff52d177970874ab3beab3e276eb90028"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/references/command-reference.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "c4df3d940d89814310bfdaded20e84dd1d6b96786f6772688de7a123338d3c8e"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/references/forum.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "407db39e8ebde47cea8637e3069bdb3d76ba42b43ed1d08ba97a56f26dbcfcb4"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/references/progress-debugging.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "81c5be5c9cc5d106151455ba82f211c1b6f1fa3cb5e3d32d1a23171d894feeaa"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/references/workers.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "d4481b2858bca82050cb8d131916da8a2ccc3857f199cdb9ced8bb41d592e2a7"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-channel/references/workflows.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "0782d602efde6e94a7d7d7950fd605eedc9a1f5a523908284e76b628fd618fd4"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".agents/skills/trellis-meta/references/local-architecture/multi-agent-channel.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "56e5070474aeca872e2d70c46feea5aaafecd3d3ec052c3f7b1877358dca62e9"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".trellis/agents/architect.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "cf88025b74ff0de093dca2a16f32d01b44347188d471929517ac30470790d44e"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".trellis/agents/plan.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "2a9c78619921b12365c133fb4a07013cff7452a2240282dcd723cf54905deb7f"
+      ]
+    },
+    {
+      "type": "safe-file-delete",
+      "from": ".trellis/agents/research.md",
+      "description": "Removed in v0.8.1 (kerminal-only pruning: channel runtime retired)",
+      "allowed_hashes": [
+        "1b6ee3b110815b55d7fe43e7a29a15e64e7cb292d22db1cb1ed8bc891a2a0400"
+      ]
+    }
+  ],
+  "notes": "Run `trellis update --migrate` to clean up retired channel-runtime files (`.trellis/agents/`, the `trellis-channel` bundled skill). Hash-verified: locally modified files are kept with a warning. Install: `npm install -g trellis-kerminal@latest`"
+}

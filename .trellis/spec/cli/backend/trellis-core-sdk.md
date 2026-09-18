@@ -13,7 +13,7 @@ TrellisKerminal ships one npm package (`trellis-kerminal`, source under
 
 | Layer | Location | Responsibility |
 |---|---|---|
-| Core | `packages/cli/src/core/` | Reusable domain logic, storage primitives, reducers, task APIs, channel APIs, mem retrieval, and typed contracts. |
+| Core | `packages/cli/src/core/` | Reusable domain logic, task record APIs, mem retrieval, and typed contracts. |
 | CLI | everything else under `packages/cli/src/` | CLI argument parsing, terminal rendering, command wiring, process exit behavior, template installation, migrations, and release scripts. |
 
 The CLI should be a thin shell around core where a capability needs to be
@@ -26,8 +26,6 @@ UX and CLI process control.
 
 Core owns:
 
-- channel storage and event append/read helpers
-- channel and thread state reducers
 - task record helpers that are useful outside the CLI
 - structured types shared by CLI code and tests
 - pure validation and normalization logic that should not depend on Commander or Chalk
@@ -53,14 +51,14 @@ rendering and option translation in the CLI layer.
 CLI code must import core through the core public entry points:
 
 ```ts
-import { createChannelStore } from "../core/channel/index.js";
+import { loadTaskRecord } from "../core/task/index.js";
 ```
 
 Do not deep-import core internals:
 
 ```ts
 // forbidden
-import { parseEvent } from "../core/channel/internal/parse-event.js";
+import { loadTaskRecord } from "../core/task/records.js";
 ```
 
 ### Public entry points
@@ -68,7 +66,7 @@ import { parseEvent } from "../core/channel/internal/parse-event.js";
 Core exposes domains as explicit directories, not from one root barrel:
 
 ```ts
-import { createChannelStore } from "../core/channel/index.js";
+import { loadTaskRecord } from "../core/task/index.js";
 import { searchMemSessions } from "../core/mem/index.js";
 ```
 
@@ -110,56 +108,14 @@ user-facing commands.
 
 ## Storage and state
 
-State transitions should have one owner.
+State transitions should have one owner. When core owns a persisted shape, the
+schema, its validation, and the typed I/O helpers all live in core — the task
+record is the current example (`core/task/schema.ts` defines the shape;
+`loadTaskRecord` / `writeTaskRecord` in `core/task/records.ts` read and write
+it). CLI commands call those APIs and render results.
 
-For channel and thread work:
-
-- event file format belongs to core
-- event append and sequence allocation belong to core
-- durable idempotency for keyed mutation replays belongs to core; keyed
-  writes must check the persisted channel event log inside the append lock and
-  return the original same-kind event instead of duplicating JSONL rows
-- reducers that compute channel/thread summaries belong to core
-- CLI commands call core APIs and render results
-
-Do not duplicate `lastSeq`, event classification, linked context parsing, or
-thread status rules across command files. Add a core helper instead, then use
-it from the CLI.
-
----
-
-## Channel runtime substrate
-
-Core owns the reusable channel runtime substrate so CLI commands and any
-future external consumers share one implementation instead of each
-re-parsing `events.jsonl`, pid files, and worker state.
-
-Core owns:
-
-- worker lifecycle event schema (`undeliverable`, `interrupt_requested`,
-  `turn_started`, `turn_finished`, `interrupted`) and `spawned.inboxPolicy`
-- `reduceWorkerRegistry` — the SOT worker-state projection (pure; durable
-  events only, never pid files or inbox cursors)
-- `listWorkers` / `watchWorkers` — worker read/watch APIs
-- `probeWorkerRuntime` / `reconcileWorkerLiveness` — host-local pid-file
-  observation, kept separate from the durable projection;
-  `reconcileWorkerLiveness` defaults to no durable writes
-- `readChannelEvents` cursor pagination (`beforeSeq` / `afterSeq` / `limit`);
-  the read-all default is preserved when no option is set
-- `watchChannels` + `channelCursorKey` — cross-channel fan-in with
-  per-channel cursors and dynamic channel discovery (project / global scope)
-- `matchesInboxPolicy` + delivery modes (`classifyDelivery`,
-  `DeliveryMode`) — delivery classification
-- the provider-injected runtime contract (`WorkerRuntime`,
-  `WorkerStartInput`, `WorkerInterruptResult`, …) plus `spawnWorker`,
-  `requestInterrupt`, and `interruptWorker`
-
-CLI owns: Commander argv, terminal rendering, exit codes, provider adapter
-implementations (`WorkerAdapter`), the supervisor process launch / signal /
-pid-file details, and `process.exit`. Core must not import CLI provider
-adapters or shell-specific process behavior — the `WorkerRuntime` is
-injected. Do not move `packages/cli/src/commands/channel/supervisor.ts`
-wholesale into core.
+Do not duplicate shape or validation rules across command files. Add a core
+helper instead, then use it from the CLI.
 
 ---
 

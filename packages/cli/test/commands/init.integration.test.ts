@@ -235,6 +235,36 @@ describe("init() integration", () => {
     expect(fs.existsSync(path.join(tmpDir, ".cursor"))).toBe(false);
   });
 
+  it("#3p interactive init (no -y, no --kerminal) configures Kerminal without a tool-selection prompt", async () => {
+    // Single-platform distribution: `trellis init` must not ask which AI tool
+    // to configure when the registry holds exactly one entry — the checkbox
+    // with a single pre-checked option is noise. `--kerminal` stays as a
+    // compatible explicit flag but is no longer required.
+    vi.mocked(configureKerminal).mockImplementation(async () => undefined);
+
+    await init({ user: "testdev" });
+
+    // No inquirer prompt may ask about tool selection.
+    const promptMock = vi.mocked(
+      (await import("inquirer")).default.prompt,
+    ) as unknown as ReturnType<typeof vi.fn>;
+    const toolPrompts = promptMock.mock.calls.filter(
+      (call) =>
+        Array.isArray(call[0]) &&
+        call[0].some(
+          (question: { message?: string }) =>
+            question.message === "Select AI tools to configure:",
+        ),
+    );
+    expect(toolPrompts).toEqual([]);
+
+    // Kerminal is configured as the default platform.
+    expect(configureKerminal).toHaveBeenCalledWith(
+      tmpDir,
+      expect.objectContaining({ nonInteractive: false }),
+    );
+  });
+
   it("#4 force mode overwrites previously modified files", async () => {
     await init({ yes: true, force: true });
 

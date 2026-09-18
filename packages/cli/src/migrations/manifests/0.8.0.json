@@ -1,0 +1,9 @@
+{
+  "version": "0.8.0",
+  "description": "Complete kerminal-only adaptation: marketplace mechanism removed, kerminal mem adapter, session identity (kerminal_default), workflow-state breadcrumb on context pulls.",
+  "breaking": true,
+  "recommendMigrate": false,
+  "changelog": "**Complete kerminal-only adaptation.** Marketplace/registry template fetching removed (offline init); `trellis mem` reads Kerminal sessions (~/.kerminal/sessions, Codex-rollout format); pull-based session identity persists the active-task pointer under the `kerminal_default` key; `get_context.py` appends the per-turn workflow-state breadcrumb; dead multi-platform cli_adapter.py retired; uninstall scrub registry collapsed to AGENTS.md; docs/CI/packaging aligned.",
+  "migrations": [],
+  "notes": "No migrations required. Install: `npm install -g trellis-kerminal`"
+}

@@ -47,9 +47,7 @@ export function isCwdHomedir(): boolean {
  * Error message printed by destructive project-state commands when the
  * homedir guard trips.
  */
-export function homedirGuardMessage(
-  commandName: "init" | "uninstall" | "ablate" | "restore",
-): string {
+export function homedirGuardMessage(commandName: "init" | "uninstall"): string {
   return (
     `✗ Refusing to run \`trellis ${commandName}\` in your home directory.\n\n` +
     `Trellis manages project state (.trellis/, .kerminal/, .agents/) and tracks\n` +
